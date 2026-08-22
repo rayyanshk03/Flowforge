@@ -448,7 +448,126 @@ export default function NetworkPage() {
           </div>
         </div>
 
-        {/* ── SECTION 4: DATA SOURCES & BOTTOM CTA ────────────────────── */}
+        {/* ── SECTION 4: WEATHER RISK HEATMAP & ML STOCHASTIC MODEL ──────────────── */}
+        <div className="rounded-lg border-2 border-stone-300 bg-white p-6 shadow-md space-y-6 font-mono">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-stone-200 pb-4">
+            <div>
+              <span className="text-[10px] font-mono font-black text-[#D94E28]">SECTION 4 · WEATHER RISK HEATMAP &amp; ML STOCHASTIC MODEL</span>
+              <h3 className="text-xl font-black text-[#151719] mt-0.5 flex items-center gap-2">
+                🌊 WEATHER RISK HEATMAP
+              </h3>
+              <p className="text-xs text-stone-600 font-sans font-semibold mt-0.5">
+                Real-time ocean storm tracking, wave height telemetry &amp; ML weather risk score calculation.
+              </p>
+            </div>
+            <span className="text-[10px] font-mono font-black text-red-700 bg-red-50 border border-red-300 px-3 py-1 rounded shadow-2xs">
+              ⚠️ RED ZONE DETECTED (STATE 8 STORM)
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+            {/* LEFT: Visual Weather Risk Diagram (7 Cols) */}
+            <div className="lg:col-span-7 rounded-lg border border-stone-300 bg-[#F4F2EC] p-5 space-y-4 shadow-2xs">
+              <div className="flex justify-between items-center text-xs font-black text-stone-800 border-b border-stone-300 pb-2">
+                <span>STORM CORRIDOR VISUALIZATION</span>
+                <span className="text-[#D94E28]">LIVE SATELLITE RADAR</span>
+              </div>
+
+              {/* Graphical Storm Box */}
+              <div className="relative w-full h-56 bg-stone-900 rounded border-2 border-stone-800 overflow-hidden flex flex-col items-center justify-center p-4 text-center">
+                {/* Background Storm Heat Grid */}
+                <div className="absolute inset-0 bg-radial from-red-600/40 via-amber-600/20 to-transparent animate-pulse" />
+
+                {/* Storm Icon & Red Zone */}
+                <div className="relative z-10 space-y-1">
+                  <div className="text-4xl animate-bounce">🌪️</div>
+                  <div className="bg-red-950/90 border-2 border-red-500 text-red-200 px-4 py-1.5 rounded font-black text-xs shadow-lg inline-block">
+                    RED ZONE ⚠️⚠️⚠️
+                  </div>
+                  <p className="text-[10px] text-red-300 font-mono">
+                    Typhoon Force Sea State · Waves 6.8m · Winds 52 kts
+                  </p>
+                </div>
+
+                {/* Animated Ship Route Bypass Line */}
+                <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between z-10 border-t-2 border-dashed border-emerald-400 pt-2 text-[10px] font-mono font-black text-emerald-400">
+                  <span className="flex items-center gap-1 bg-stone-900/90 px-2 py-0.5 rounded border border-emerald-500/50">
+                    🚢 Ship Route ──────────────►
+                  </span>
+                  <span className="bg-emerald-950/90 text-emerald-300 border border-emerald-500 px-2.5 py-0.5 rounded">
+                    Optimal Reroute Bypass Active ✅
+                  </span>
+                </div>
+              </div>
+
+              {/* Real-time Telemetry Data Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center text-xs font-mono">
+                <div className="bg-white rounded border border-stone-300 p-2 space-y-0.5">
+                  <span className="text-stone-400 text-[9px] block">WIND SPEED</span>
+                  <strong className="text-red-700 font-black text-xs block">52.4 kts</strong>
+                </div>
+                <div className="bg-white rounded border border-stone-300 p-2 space-y-0.5">
+                  <span className="text-stone-400 text-[9px] block">WAVE HEIGHT</span>
+                  <strong className="text-red-700 font-black text-xs block">6.8 m</strong>
+                </div>
+                <div className="bg-white rounded border border-stone-300 p-2 space-y-0.5">
+                  <span className="text-stone-400 text-[9px] block">CURRENT SPEED</span>
+                  <strong className="text-stone-800 font-black text-xs block">3.4 kts</strong>
+                </div>
+                <div className="bg-white rounded border border-stone-300 p-2 space-y-0.5">
+                  <span className="text-stone-400 text-[9px] block">STORM PROB</span>
+                  <strong className="text-red-700 font-black text-xs block">84.2%</strong>
+                </div>
+                <div className="bg-white rounded border border-stone-300 p-2 space-y-0.5">
+                  <span className="text-stone-400 text-[9px] block">VISIBILITY</span>
+                  <strong className="text-amber-800 font-black text-xs block">2.1 nm</strong>
+                </div>
+              </div>
+            </div>
+
+            {/* RIGHT: ML Usage & Formula Calculation Card (5 Cols) */}
+            <div className="lg:col-span-5 rounded-lg border-2 border-stone-300 bg-white p-5 space-y-4 shadow-2xs">
+              <div className="border-b border-stone-200 pb-2 flex justify-between items-center">
+                <span className="font-black text-xs text-stone-900">ML USAGE: WEATHER MODEL</span>
+                <span className="text-[9px] font-black text-[#047857] bg-emerald-50 border border-emerald-300 px-2 py-0.5 rounded">
+                  MODEL READY
+                </span>
+              </div>
+
+              {/* Formula Card */}
+              <div className="bg-[#F4F2EC] rounded border border-stone-300 p-3 space-y-2 text-xs">
+                <span className="text-[10px] font-black text-[#D94E28] block">WEATHER RISK SCORE FORMULA</span>
+                <div className="p-2.5 bg-white rounded border border-stone-300 font-mono text-[11px] font-black text-stone-900 leading-relaxed shadow-2xs">
+                  <p className="text-[#D94E28]">Risk Score =</p>
+                  <p className="pl-3 text-stone-700">0.35 × Wind Speed</p>
+                  <p className="pl-3 text-stone-700">+ 0.30 × Wave Height</p>
+                  <p className="pl-3 text-stone-700">+ 0.20 × Storm Prob</p>
+                  <p className="pl-3 text-stone-700">+ 0.15 × Visibility Factor</p>
+                </div>
+              </div>
+
+              {/* Live ML Calculated Risk Score Badge */}
+              <div className="rounded-lg border-2 border-red-400 bg-red-50 p-4 space-y-1">
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-black text-red-800 uppercase">CALCULATED ML RISK SCORE</span>
+                  <span className="text-[10px] font-black text-red-900 bg-red-200 px-2 py-0.5 rounded border border-red-400">
+                    HIGH EXPOSURE
+                  </span>
+                </div>
+                <div className="text-3xl font-black text-red-700 tracking-tight font-mono">
+                  78.4 / 100
+                </div>
+                <p className="text-[10px] text-red-800 font-sans font-semibold pt-1 border-t border-red-200">
+                  Recommendation: Divert via ALT-A Coastal Bypass to reduce wave impact by 64%.
+                </p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        {/* ── SECTION 5: DATA SOURCES & BOTTOM CTA ────────────────────── */}
         <div className="rounded-lg border border-stone-300 bg-white p-5 md:p-6 flex flex-wrap items-center justify-between gap-5 shadow-2xs font-mono">
           <div className="flex flex-wrap items-center gap-3 text-xs font-bold text-stone-700">
             <span className="font-black text-[#151719] uppercase tracking-wider text-[10px]">DATA SOURCES:</span>
