@@ -7,15 +7,10 @@ import {
   CheckCircle2,
   Globe2,
   Play,
-  RefreshCw,
   Sparkles,
   History,
-  BarChart3,
-  Ship,
-  MapPin,
-  Compass,
-  Activity,
-  TrendingUp,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import Navbar from '@/components/Navbar'
@@ -41,6 +36,7 @@ export default function NetworkPage() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [createScenarioOpen, setCreateScenarioOpen] = useState(false)
   const [statusMenuOpen, setStatusMenuOpen] = useState(false)
+  const [expandedCard, setExpandedCard] = useState<string | null>('A')
 
   // Dynamic Scenario State — originPort & destPort are the EXACT names from user input
   const [scenarioState, setScenarioState] = useState({
@@ -122,7 +118,7 @@ export default function NetworkPage() {
   return (
     <main className="min-h-screen bg-[#F6F6F3] text-[#151719] font-sans selection:bg-[#D94E28] selection:text-white">
 
-      {/* ── HEADER — mirrors simulation page exactly ─────────────────── */}
+      {/* ── HEADER ─────────────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-50 border-b border-stone-300 bg-[#F6F6F3]/95 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-[1440px] items-center justify-between px-5 md:px-12">
           {/* Logo */}
@@ -195,7 +191,7 @@ export default function NetworkPage() {
         <CreateScenarioModal isOpen={createScenarioOpen} onClose={() => setCreateScenarioOpen(false)} />
       </header>
 
-      {/* ── PAGE TITLE BAR — white bar, mirrors simulation page ─────── */}
+      {/* ── PAGE TITLE BAR ─────────────────────────────────────────────────── */}
       <div className="border-b border-stone-300 bg-white py-5">
         <div className="mx-auto flex max-w-[1440px] flex-col gap-4 px-5 md:flex-row md:items-center md:justify-between md:px-12">
           <div>
@@ -273,12 +269,18 @@ export default function NetworkPage() {
               </div>
             </div>
 
-            {/* Active Route Detail Strip */}
+            {/* Active Route Detail Analysis Strip */}
             {selectedReroute && (
-              <div className="mt-4 rounded-lg border border-stone-300 bg-white p-5 shadow-2xs font-mono">
-                <div className="flex items-center justify-between border-b border-stone-200 pb-3 mb-4">
-                  <span className="text-[10px] font-black text-[#D94E28]">SECTION 2 · SELECTED REROUTE ANALYSIS</span>
-                  <span className={`text-[10px] font-black px-2.5 py-0.5 rounded border ${
+              <div className="mt-4 rounded-lg border-2 border-stone-300 bg-white p-5 shadow-xs font-mono space-y-4">
+                <div className="flex items-center justify-between border-b border-stone-200 pb-3">
+                  <div>
+                    <span className="text-[10px] font-black text-[#D94E28]">SECTION 2 · SELECTED CORRIDOR STEPPER ANALYSIS</span>
+                    <h3 className="text-base font-black text-stone-900 mt-0.5 flex items-center gap-2">
+                      {selectedReroute.recommended ? 'Recommended Route ⭐' : `Route Option (ALT-${selectedReroute.id})`}
+                      <span className="text-xs font-normal text-stone-500">({selectedReroute.distance})</span>
+                    </h3>
+                  </div>
+                  <span className={`text-[10px] font-black px-2.5 py-1 rounded border ${
                     selectedReroute.recommended
                       ? 'bg-emerald-50 border-[#047857] text-[#047857]'
                       : 'bg-stone-100 border-stone-300 text-stone-700'
@@ -286,7 +288,58 @@ export default function NetworkPage() {
                     {selectedReroute.recommended ? 'RECOMMENDED — BEST ROI' : `ALT-${selectedReroute.id}`}
                   </span>
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+
+                {/* Structured Waypoint Stepper Tree (Requested by User) */}
+                <div className="rounded-lg border border-stone-300 bg-[#F4F2EC] p-4 space-y-3">
+                  <span className="text-[10px] font-black text-stone-500 uppercase tracking-wider block border-b border-stone-300/80 pb-2">
+                    CORRIDOR STEPPER SEQUENCE
+                  </span>
+
+                  <div className="space-y-1 py-1">
+                    {selectedReroute.corridorSteps?.map((step, idx) => (
+                      <React.Fragment key={idx}>
+                        <div className="flex items-center gap-3 font-black text-stone-900 text-xs">
+                          <span className={`size-3 rounded-full shrink-0 flex items-center justify-center text-[8px] text-white font-bold ${
+                            idx === 0
+                              ? 'bg-stone-900 ring-2 ring-stone-300'
+                              : idx === selectedReroute.corridorSteps.length - 1
+                              ? 'bg-[#047857] ring-2 ring-emerald-200'
+                              : 'bg-[#D94E28] ring-2 ring-orange-200'
+                          }`}>
+                            {idx + 1}
+                          </span>
+                          <span className="font-mono">{step}</span>
+                        </div>
+                        {idx < selectedReroute.corridorSteps.length - 1 && (
+                          <div className="ml-1.5 pl-3 border-l-2 border-dashed border-stone-300 py-1.5 text-[11px] text-stone-400 font-mono">
+                            │
+                          </div>
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </div>
+
+                  {/* Summary Metrics Banner */}
+                  <div className="grid grid-cols-3 gap-2 border-t border-stone-300 pt-3 text-center">
+                    <div className="bg-white rounded border border-stone-300 p-2">
+                      <span className="text-[10px] text-stone-500 block font-bold">ETA:</span>
+                      <strong className="text-stone-900 text-sm block font-black">{selectedReroute.etaDays}</strong>
+                    </div>
+                    <div className="bg-white rounded border border-stone-300 p-2">
+                      <span className="text-[10px] text-stone-500 block font-bold">Fuel:</span>
+                      <strong className={selectedReroute.fuelImpact.startsWith('-') ? 'text-[#047857] text-sm block font-black' : 'text-amber-800 text-sm block font-black'}>
+                        {selectedReroute.fuelImpact}
+                      </strong>
+                    </div>
+                    <div className="bg-white rounded border border-stone-300 p-2">
+                      <span className="text-[10px] text-stone-500 block font-bold">Risk:</span>
+                      <strong className="text-stone-900 text-sm block font-black">{selectedReroute.riskLevel}</strong>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Metrics Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
                   {[
                     { l: 'ETA IMPACT', v: selectedReroute.eta, highlight: true },
                     { l: 'ROUTE DISTANCE', v: selectedReroute.distance },
@@ -305,131 +358,102 @@ export default function NetworkPage() {
             )}
           </div>
 
-          {/* RIGHT: Reroute Options Panel */}
-          <div className="w-full lg:w-1/3 shrink-0 rounded-lg border-2 border-stone-300 bg-white p-6 shadow-md space-y-5">
+          {/* RIGHT: User-Friendly & Compact Reroute Options Panel */}
+          <div className="w-full lg:w-1/3 shrink-0 rounded-lg border-2 border-stone-300 bg-white p-5 shadow-md space-y-4 font-mono">
             <div className="border-b border-stone-200 pb-3">
-              <span className="text-[10px] font-mono font-black text-[#D94E28]">SECTION 3 · AVAILABLE REROUTES</span>
-              <h3 className="text-lg font-black text-[#151719] mt-0.5">{reroutes.length} ALTERNATIVES EVALUATED</h3>
+              <span className="text-[10px] font-black text-[#D94E28]">SECTION 3 · AVAILABLE REROUTES</span>
+              <h3 className="text-base font-black text-[#151719] mt-0.5">{reroutes.length} ALTERNATIVES EVALUATED</h3>
             </div>
 
-            {reroutes.map((r) => {
-              const isActive = activeReroute === r.id
-              const borderColor = isActive
-                ? r.recommended ? 'border-[#047857]' : r.id === 'B' ? 'border-amber-500' : 'border-blue-500'
-                : 'border-stone-300'
-              const bgColor = isActive
-                ? r.recommended ? 'bg-emerald-50' : r.id === 'B' ? 'bg-amber-50' : 'bg-blue-50'
-                : 'bg-white hover:bg-[#F4F2EC]'
+            {/* Compact, User-Friendly Cards */}
+            <div className="space-y-3">
+              {reroutes.map((r) => {
+                const isActive = activeReroute === r.id
+                const isExpanded = expandedCard === r.id
+                const borderColor = isActive
+                  ? r.recommended ? 'border-[#047857]' : r.id === 'B' ? 'border-amber-500' : 'border-blue-500'
+                  : 'border-stone-300'
+                const bgColor = isActive
+                  ? r.recommended ? 'bg-emerald-50/70' : r.id === 'B' ? 'bg-amber-50/70' : 'bg-blue-50/70'
+                  : 'bg-white hover:bg-[#F4F2EC]'
 
-              return (
-                <div
-                  key={r.id}
-                  onClick={() => setActiveReroute(r.id)}
-                  className={`rounded-lg border-2 p-4 cursor-pointer transition-all space-y-3 ${borderColor} ${bgColor}`}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
+                return (
+                  <div
+                    key={r.id}
+                    onClick={() => {
+                      setActiveReroute(r.id)
+                      setExpandedCard(expandedCard === r.id ? null : r.id)
+                    }}
+                    className={`rounded-xl border-2 p-3.5 cursor-pointer transition-all space-y-2.5 shadow-2xs ${borderColor} ${bgColor}`}
+                  >
+                    {/* Header */}
+                    <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-1.5">
-                        {r.recommended && <CheckCircle2 className="size-3.5 text-[#047857] shrink-0" />}
-                        <span className={`text-xs font-black font-mono ${r.recommended ? 'text-[#047857]' : 'text-[#151719]'}`}>
-                          {r.label}
+                        {r.recommended && <CheckCircle2 className="size-4 text-[#047857] shrink-0" />}
+                        <span className={`text-xs font-black ${r.recommended ? 'text-[#047857]' : 'text-[#151719]'}`}>
+                          {r.recommended ? 'Direct Bathymetric (ALT-A) ⭐' : r.id === 'B' ? 'Coastal Bypass (ALT-B)' : 'Deepwater Cape Bypass (ALT-C)'}
                         </span>
                       </div>
-                      <p className="text-[11px] text-stone-500 mt-0.5 leading-snug font-semibold">{r.detail}</p>
-                    </div>
-                    {r.recommended && (
-                      <span className="shrink-0 text-[9px] font-mono font-black text-[#047857] bg-emerald-100 border border-[#047857] px-2 py-0.5 rounded">
-                        RECOMMENDED
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
-                    <div className="bg-white rounded border border-stone-200 p-2 space-y-0.5">
-                      <span className="text-stone-400 font-bold block">ETA IMPACT</span>
-                      <strong className="text-[#151719] font-black">{r.eta}</strong>
-                    </div>
-                    <div className="bg-white rounded border border-stone-200 p-2 space-y-0.5">
-                      <span className="text-stone-400 font-bold block">DISTANCE</span>
-                      <strong className="text-[#151719] font-black">{r.distance}</strong>
-                    </div>
-                    <div className="bg-white rounded border border-stone-200 p-2 space-y-0.5">
-                      <span className="text-stone-400 font-bold block">ROUTE COST</span>
-                      <strong className="text-[#151719] font-black">{r.cost}</strong>
-                    </div>
-                    <div className="bg-white rounded border border-stone-200 p-2 space-y-0.5">
-                      <span className="text-stone-400 font-bold block">NET SAVINGS</span>
-                      <strong className={`font-black ${r.savings?.startsWith('+') ? 'text-[#047857]' : 'text-[#991B1B]'}`}>{r.savings}</strong>
-                    </div>
-                  </div>
-
-                  {/* Vertical Route Stepper Structure requested by User */}
-                  <div className="rounded border border-stone-300 bg-white p-3 font-mono text-xs space-y-2.5">
-                    <div className="flex items-center justify-between border-b border-stone-200 pb-2">
-                      <span className="font-black text-[#D94E28] uppercase text-[10px] flex items-center gap-1">
-                        {r.recommended ? 'Recommended Route ⭐' : `Route Option (ALT-${r.id})`}
-                      </span>
-                      {r.recommended && (
-                        <span className="text-[9px] font-black text-[#047857] bg-emerald-100 border border-[#047857] px-1.5 py-0.5 rounded">
-                          OPTIMAL
+                      {r.recommended ? (
+                        <span className="shrink-0 text-[9px] font-black text-[#047857] bg-emerald-100 border border-[#047857] px-2 py-0.5 rounded">
+                          RECOMMENDED
+                        </span>
+                      ) : (
+                        <span className="shrink-0 text-[9px] font-bold text-stone-500 bg-stone-100 border border-stone-300 px-2 py-0.5 rounded">
+                          ALT-{r.id}
                         </span>
                       )}
                     </div>
 
-                    {/* Stepper Tree */}
-                    <div className="py-1 space-y-0.5">
+                    {/* Horizontal Waypoint Breadcrumb Chain (Sleek & User-Friendly) */}
+                    <div className="flex items-center gap-1 flex-wrap text-[10px] font-bold text-stone-700 bg-white/80 rounded border border-stone-200 px-2 py-1">
                       {r.corridorSteps?.map((step, idx) => (
                         <React.Fragment key={idx}>
-                          <div className="flex items-center gap-2 font-black text-stone-900 text-[11px]">
-                            <span className={`size-2.5 rounded-full shrink-0 ${
-                              idx === 0
-                                ? 'bg-stone-900 ring-2 ring-stone-300'
-                                : idx === r.corridorSteps.length - 1
-                                ? 'bg-[#047857] ring-2 ring-emerald-200'
-                                : 'bg-[#D94E28] ring-2 ring-orange-200'
-                            }`} />
-                            <span className="truncate">{step}</span>
-                          </div>
-                          {idx < r.corridorSteps.length - 1 && (
-                            <div className="ml-1 pl-3 border-l-2 border-dashed border-stone-300 py-1 text-[10px] text-stone-400 font-mono">
-                              │
-                            </div>
-                          )}
+                          <span className={idx === 0 ? 'text-stone-900 font-black' : idx === r.corridorSteps.length - 1 ? 'text-[#047857] font-black' : 'text-stone-600'}>
+                            {step}
+                          </span>
+                          {idx < r.corridorSteps.length - 1 && <span className="text-[#D94E28] font-bold">➔</span>}
                         </React.Fragment>
                       ))}
                     </div>
 
-                    {/* Metrics Footer Grid */}
-                    <div className="grid grid-cols-3 gap-1.5 border-t border-stone-200 pt-2 text-[10px] text-center font-mono font-bold">
-                      <div className="bg-[#F4F2EC] rounded p-1.5 border border-stone-300">
-                        <span className="text-stone-500 block text-[9px]">ETA:</span>
-                        <strong className="text-stone-900 block text-[11px]">{r.etaDays}</strong>
-                      </div>
-                      <div className="bg-[#F4F2EC] rounded p-1.5 border border-stone-300">
-                        <span className="text-stone-500 block text-[9px]">Fuel:</span>
-                        <strong className={r.fuelImpact.startsWith('-') ? 'text-[#047857] block text-[11px]' : 'text-amber-800 block text-[11px]'}>
-                          {r.fuelImpact}
-                        </strong>
-                      </div>
-                      <div className="bg-[#F4F2EC] rounded p-1.5 border border-stone-300">
-                        <span className="text-stone-500 block text-[9px]">Risk:</span>
-                        <strong className="text-stone-900 block text-[11px]">{r.riskLevel}</strong>
-                      </div>
+                    {/* Compact Metrics Strip */}
+                    <div className="flex items-center justify-between text-[10px] font-bold text-stone-700 bg-white/90 rounded border border-stone-200 p-2">
+                      <div><span className="text-stone-400 font-normal">ETA:</span> <strong className="text-stone-900">{r.etaDays}</strong></div>
+                      <div><span className="text-stone-400 font-normal">Fuel:</span> <strong className={r.fuelImpact.startsWith('-') ? 'text-[#047857]' : 'text-amber-800'}>{r.fuelImpact}</strong></div>
+                      <div><span className="text-stone-400 font-normal">Risk:</span> <strong className="text-stone-900">{r.riskLevel}</strong></div>
+                      <div><span className="text-stone-400 font-normal">Cost:</span> <strong className="text-stone-900">{r.cost}</strong></div>
                     </div>
-                  </div>
 
-                  {r.recommended && (
-                    <div className="text-[11px] text-[#047857] font-black flex items-center gap-1.5 border-t border-emerald-200 pt-2 font-mono">
-                      <CheckCircle2 className="size-3.5" />
-                      Best ETA/cost balance · Lowest viable risk
+                    {/* Accordion Toggle for Deep Details */}
+                    <div className="flex items-center justify-between text-[10px] font-bold text-stone-500 pt-1 border-t border-stone-200/80">
+                      <span>{r.distance} · {r.savings}</span>
+                      <button className="flex items-center gap-1 text-[#D94E28] font-black hover:underline">
+                        {isExpanded ? <>Less <ChevronUp className="size-3" /></> : <>Details <ChevronDown className="size-3" /></>}
+                      </button>
                     </div>
-                  )}
-                </div>
-              )
-            })}
+
+                    {/* Collapsible Stepper & Deep Detail Block */}
+                    {isExpanded && (
+                      <div className="pt-2 border-t border-stone-300 space-y-2 animate-in fade-in zoom-in-95">
+                        <p className="text-[10px] text-stone-600 font-semibold leading-relaxed">{r.detail}</p>
+                        <div className="rounded border border-stone-300 bg-white p-2.5 space-y-1 text-[10px]">
+                          <span className="font-black text-stone-500 uppercase block text-[9px]">STEP-BY-STEP WAYPOINT TREE</span>
+                          {r.corridorSteps?.map((s, i) => (
+                            <div key={i} className="flex items-center gap-1.5 text-stone-800 font-bold">
+                              <span className="text-[9px] text-[#D94E28] font-black">[{i + 1}]</span> {s}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
 
             {/* Voyage Summary */}
-            <div className="rounded-lg border border-stone-300 bg-[#F4F2EC] p-4 space-y-2 text-xs font-mono">
+            <div className="rounded-lg border border-stone-300 bg-[#F4F2EC] p-4 space-y-2 text-xs">
               <span className="text-[10px] font-black text-stone-500 uppercase tracking-widest block border-b border-stone-300 pb-2">VOYAGE SUMMARY</span>
               {[
                 { l: 'ORIGIN PORT', v: scenarioState.originPort },
@@ -448,126 +472,7 @@ export default function NetworkPage() {
           </div>
         </div>
 
-        {/* ── SECTION 4: WEATHER RISK HEATMAP & ML STOCHASTIC MODEL ──────────────── */}
-        <div className="rounded-lg border-2 border-stone-300 bg-white p-6 shadow-md space-y-6 font-mono">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-stone-200 pb-4">
-            <div>
-              <span className="text-[10px] font-mono font-black text-[#D94E28]">SECTION 4 · WEATHER RISK HEATMAP &amp; ML STOCHASTIC MODEL</span>
-              <h3 className="text-xl font-black text-[#151719] mt-0.5 flex items-center gap-2">
-                🌊 WEATHER RISK HEATMAP
-              </h3>
-              <p className="text-xs text-stone-600 font-sans font-semibold mt-0.5">
-                Real-time ocean storm tracking, wave height telemetry &amp; ML weather risk score calculation.
-              </p>
-            </div>
-            <span className="text-[10px] font-mono font-black text-red-700 bg-red-50 border border-red-300 px-3 py-1 rounded shadow-2xs">
-              ⚠️ RED ZONE DETECTED (STATE 8 STORM)
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-
-            {/* LEFT: Visual Weather Risk Diagram (7 Cols) */}
-            <div className="lg:col-span-7 rounded-lg border border-stone-300 bg-[#F4F2EC] p-5 space-y-4 shadow-2xs">
-              <div className="flex justify-between items-center text-xs font-black text-stone-800 border-b border-stone-300 pb-2">
-                <span>STORM CORRIDOR VISUALIZATION</span>
-                <span className="text-[#D94E28]">LIVE SATELLITE RADAR</span>
-              </div>
-
-              {/* Graphical Storm Box */}
-              <div className="relative w-full h-56 bg-stone-900 rounded border-2 border-stone-800 overflow-hidden flex flex-col items-center justify-center p-4 text-center">
-                {/* Background Storm Heat Grid */}
-                <div className="absolute inset-0 bg-radial from-red-600/40 via-amber-600/20 to-transparent animate-pulse" />
-
-                {/* Storm Icon & Red Zone */}
-                <div className="relative z-10 space-y-1">
-                  <div className="text-4xl animate-bounce">🌪️</div>
-                  <div className="bg-red-950/90 border-2 border-red-500 text-red-200 px-4 py-1.5 rounded font-black text-xs shadow-lg inline-block">
-                    RED ZONE ⚠️⚠️⚠️
-                  </div>
-                  <p className="text-[10px] text-red-300 font-mono">
-                    Typhoon Force Sea State · Waves 6.8m · Winds 52 kts
-                  </p>
-                </div>
-
-                {/* Animated Ship Route Bypass Line */}
-                <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between z-10 border-t-2 border-dashed border-emerald-400 pt-2 text-[10px] font-mono font-black text-emerald-400">
-                  <span className="flex items-center gap-1 bg-stone-900/90 px-2 py-0.5 rounded border border-emerald-500/50">
-                    🚢 Ship Route ──────────────►
-                  </span>
-                  <span className="bg-emerald-950/90 text-emerald-300 border border-emerald-500 px-2.5 py-0.5 rounded">
-                    Optimal Reroute Bypass Active ✅
-                  </span>
-                </div>
-              </div>
-
-              {/* Real-time Telemetry Data Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center text-xs font-mono">
-                <div className="bg-white rounded border border-stone-300 p-2 space-y-0.5">
-                  <span className="text-stone-400 text-[9px] block">WIND SPEED</span>
-                  <strong className="text-red-700 font-black text-xs block">52.4 kts</strong>
-                </div>
-                <div className="bg-white rounded border border-stone-300 p-2 space-y-0.5">
-                  <span className="text-stone-400 text-[9px] block">WAVE HEIGHT</span>
-                  <strong className="text-red-700 font-black text-xs block">6.8 m</strong>
-                </div>
-                <div className="bg-white rounded border border-stone-300 p-2 space-y-0.5">
-                  <span className="text-stone-400 text-[9px] block">CURRENT SPEED</span>
-                  <strong className="text-stone-800 font-black text-xs block">3.4 kts</strong>
-                </div>
-                <div className="bg-white rounded border border-stone-300 p-2 space-y-0.5">
-                  <span className="text-stone-400 text-[9px] block">STORM PROB</span>
-                  <strong className="text-red-700 font-black text-xs block">84.2%</strong>
-                </div>
-                <div className="bg-white rounded border border-stone-300 p-2 space-y-0.5">
-                  <span className="text-stone-400 text-[9px] block">VISIBILITY</span>
-                  <strong className="text-amber-800 font-black text-xs block">2.1 nm</strong>
-                </div>
-              </div>
-            </div>
-
-            {/* RIGHT: ML Usage & Formula Calculation Card (5 Cols) */}
-            <div className="lg:col-span-5 rounded-lg border-2 border-stone-300 bg-white p-5 space-y-4 shadow-2xs">
-              <div className="border-b border-stone-200 pb-2 flex justify-between items-center">
-                <span className="font-black text-xs text-stone-900">ML USAGE: WEATHER MODEL</span>
-                <span className="text-[9px] font-black text-[#047857] bg-emerald-50 border border-emerald-300 px-2 py-0.5 rounded">
-                  MODEL READY
-                </span>
-              </div>
-
-              {/* Formula Card */}
-              <div className="bg-[#F4F2EC] rounded border border-stone-300 p-3 space-y-2 text-xs">
-                <span className="text-[10px] font-black text-[#D94E28] block">WEATHER RISK SCORE FORMULA</span>
-                <div className="p-2.5 bg-white rounded border border-stone-300 font-mono text-[11px] font-black text-stone-900 leading-relaxed shadow-2xs">
-                  <p className="text-[#D94E28]">Risk Score =</p>
-                  <p className="pl-3 text-stone-700">0.35 × Wind Speed</p>
-                  <p className="pl-3 text-stone-700">+ 0.30 × Wave Height</p>
-                  <p className="pl-3 text-stone-700">+ 0.20 × Storm Prob</p>
-                  <p className="pl-3 text-stone-700">+ 0.15 × Visibility Factor</p>
-                </div>
-              </div>
-
-              {/* Live ML Calculated Risk Score Badge */}
-              <div className="rounded-lg border-2 border-red-400 bg-red-50 p-4 space-y-1">
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-black text-red-800 uppercase">CALCULATED ML RISK SCORE</span>
-                  <span className="text-[10px] font-black text-red-900 bg-red-200 px-2 py-0.5 rounded border border-red-400">
-                    HIGH EXPOSURE
-                  </span>
-                </div>
-                <div className="text-3xl font-black text-red-700 tracking-tight font-mono">
-                  78.4 / 100
-                </div>
-                <p className="text-[10px] text-red-800 font-sans font-semibold pt-1 border-t border-red-200">
-                  Recommendation: Divert via ALT-A Coastal Bypass to reduce wave impact by 64%.
-                </p>
-              </div>
-            </div>
-
-          </div>
-        </div>
-
-        {/* ── SECTION 5: DATA SOURCES & BOTTOM CTA ────────────────────── */}
+        {/* ── SECTION 4: DATA SOURCES & BOTTOM CTA ────────────────────── */}
         <div className="rounded-lg border border-stone-300 bg-white p-5 md:p-6 flex flex-wrap items-center justify-between gap-5 shadow-2xs font-mono">
           <div className="flex flex-wrap items-center gap-3 text-xs font-bold text-stone-700">
             <span className="font-black text-[#151719] uppercase tracking-wider text-[10px]">DATA SOURCES:</span>
