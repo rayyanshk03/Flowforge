@@ -143,7 +143,7 @@ export default function EnterpriseMaritimeLandingPage() {
           </div>
         </section>
 
-        {/* 3. LIVE SYSTEM VISUALIZATION */}
+        {/* 3. LIVE SYSTEM VISUALIZATION WITH CONNECTING FLOW ARROWS */}
         <section id="visualization" className="rounded-xl border border-[#D9D9D6] bg-white p-8 md:p-10 space-y-8 shadow-2xs">
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-stone-200 pb-4">
             <div>
@@ -157,10 +157,10 @@ export default function EnterpriseMaritimeLandingPage() {
             </span>
           </div>
 
-          {/* Minimal Maritime Route Visualization Nodes */}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 text-xs font-mono items-stretch">
+          {/* Minimal Maritime Route Visualization Nodes with Flow Arrows */}
+          <div className="flex flex-col lg:flex-row items-center gap-3 text-xs font-mono">
             {/* ORIGIN */}
-            <div className="rounded-lg border border-[#D9D9D6] bg-[#F7F6F2] p-5 space-y-2 flex flex-col justify-between">
+            <div className="w-full lg:flex-1 rounded-lg border-2 border-stone-300 bg-[#F7F6F2] p-5 space-y-2 flex flex-col justify-between shadow-2xs hover:border-stone-400 transition-all">
               <div>
                 <span className="text-[10px] font-bold text-[#667085] block uppercase tracking-wider">ORIGIN</span>
                 <span className="text-lg font-black text-[#111827] block mt-1">Shanghai</span>
@@ -170,8 +170,10 @@ export default function EnterpriseMaritimeLandingPage() {
               </span>
             </div>
 
+            <div className="text-stone-400 font-bold text-lg hidden lg:block shrink-0 px-1">→</div>
+
             {/* CURRENT ROUTE */}
-            <div className="rounded-lg border border-[#D9D9D6] bg-[#F7F6F2] p-5 space-y-2 flex flex-col justify-between">
+            <div className="w-full lg:flex-1 rounded-lg border-2 border-stone-300 bg-[#F7F6F2] p-5 space-y-2 flex flex-col justify-between shadow-2xs hover:border-stone-400 transition-all">
               <div>
                 <span className="text-[10px] font-bold text-[#667085] block uppercase tracking-wider">CURRENT ROUTE</span>
                 <span className="text-base font-bold text-[#111827] block mt-1">East China Sea</span>
@@ -181,19 +183,23 @@ export default function EnterpriseMaritimeLandingPage() {
               </span>
             </div>
 
+            <div className="text-red-500 font-bold text-lg hidden lg:block shrink-0 px-1">→</div>
+
             {/* DISRUPTION */}
-            <div className="rounded-lg border-2 border-red-300 bg-red-50/80 p-5 space-y-2 flex flex-col justify-between">
+            <div className="w-full lg:flex-1 rounded-lg border-2 border-red-400 bg-red-50/90 p-5 space-y-2 flex flex-col justify-between shadow-xs hover:border-red-500 transition-all">
               <div>
                 <span className="text-[10px] font-bold text-red-700 block uppercase tracking-wider">DISRUPTION</span>
-                <span className="text-base font-black text-red-900 block mt-1">Cyclone Hazard</span>
+                <span className="text-base font-black text-red-950 block mt-1">Cyclone Hazard</span>
               </div>
-              <span className="text-[10px] text-red-700 font-bold block pt-2 border-t border-red-200">
+              <span className="text-[10px] text-red-800 font-bold block pt-2 border-t border-red-200">
                 HIGH EXPOSURE
               </span>
             </div>
 
+            <div className="text-emerald-600 font-bold text-lg hidden lg:block shrink-0 px-1">→</div>
+
             {/* ALTERNATIVE */}
-            <div className="rounded-lg border-2 border-emerald-300 bg-emerald-50/80 p-5 space-y-2 flex flex-col justify-between">
+            <div className="w-full lg:flex-1 rounded-lg border-2 border-emerald-400 bg-emerald-50/90 p-5 space-y-2 flex flex-col justify-between shadow-xs hover:border-emerald-500 transition-all">
               <div>
                 <span className="text-[10px] font-bold text-emerald-800 block uppercase tracking-wider">ALTERNATIVE</span>
                 <span className="text-lg font-black text-emerald-950 block mt-1">Kobe</span>
@@ -203,8 +209,10 @@ export default function EnterpriseMaritimeLandingPage() {
               </span>
             </div>
 
+            <div className="text-stone-400 font-bold text-lg hidden lg:block shrink-0 px-1">→</div>
+
             {/* DESTINATION */}
-            <div className="rounded-lg border border-[#D9D9D6] bg-[#F7F6F2] p-5 space-y-2 flex flex-col justify-between">
+            <div className="w-full lg:flex-1 rounded-lg border-2 border-stone-300 bg-[#F7F6F2] p-5 space-y-2 flex flex-col justify-between shadow-2xs hover:border-stone-400 transition-all">
               <div>
                 <span className="text-[10px] font-bold text-[#667085] block uppercase tracking-wider">DESTINATION</span>
                 <span className="text-lg font-black text-[#111827] block mt-1">Yokohama</span>
@@ -217,24 +225,24 @@ export default function EnterpriseMaritimeLandingPage() {
 
           {/* Small Live Indicators */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-4 font-mono">
-            <div className="flex items-center justify-between rounded-lg bg-[#F7F6F2] p-4 border border-[#D9D9D6]">
+            <div className="flex items-center justify-between rounded-lg bg-[#F7F6F2] p-4 border border-[#D9D9D6] shadow-2xs">
               <span className="text-xs font-bold text-[#667085]">Operational Stress</span>
               <strong className="text-xl font-black text-[#111827]">23%</strong>
             </div>
 
-            <div className="flex items-center justify-between rounded-lg bg-[#F7F6F2] p-4 border border-[#D9D9D6]">
+            <div className="flex items-center justify-between rounded-lg bg-[#F7F6F2] p-4 border border-[#D9D9D6] shadow-2xs">
               <span className="text-xs font-bold text-[#667085]">Disruption Probability</span>
               <strong className="text-xl font-black text-[#D94E28]">22.9%</strong>
             </div>
 
-            <div className="flex items-center justify-between rounded-lg bg-[#F7F6F2] p-4 border border-[#D9D9D6]">
+            <div className="flex items-center justify-between rounded-lg bg-[#F7F6F2] p-4 border border-[#D9D9D6] shadow-2xs">
               <span className="text-xs font-bold text-[#667085]">ETA Exposure</span>
               <strong className="text-xl font-black text-amber-700">+18h</strong>
             </div>
           </div>
         </section>
 
-        {/* 4. PROBLEM → INTELLIGENCE → DECISION */}
+        {/* 4. PROBLEM → INTELLIGENCE → DECISION CONNECTED FRAMEWORK */}
         <section className="space-y-4">
           <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#D94E28] block">
             SECTION 4 · OPERATIONAL FRAMEWORK
@@ -242,10 +250,13 @@ export default function EnterpriseMaritimeLandingPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
             {/* PROBLEM */}
-            <div className="rounded-xl border border-[#D9D9D6] bg-white p-7 space-y-4 shadow-2xs flex flex-col justify-between">
+            <div className="rounded-xl border-2 border-red-200 bg-white p-7 space-y-4 shadow-2xs hover:border-red-300 transition-all flex flex-col justify-between">
               <div className="space-y-3">
-                <div className="inline-block rounded-full bg-red-100 px-3 py-1 text-[11px] font-mono font-bold text-red-900 uppercase tracking-wider">
-                  PROBLEM
+                <div className="flex items-center justify-between">
+                  <div className="inline-block rounded-full bg-red-100 px-3.5 py-1 text-[11px] font-mono font-bold text-red-900 uppercase tracking-wider">
+                    01 · PROBLEM
+                  </div>
+                  <span className="text-red-400 font-mono text-sm font-bold">→</span>
                 </div>
                 <h3 className="text-xl font-bold text-[#111827] leading-snug">
                   "Disruptions are detected too late."
@@ -257,10 +268,13 @@ export default function EnterpriseMaritimeLandingPage() {
             </div>
 
             {/* INTELLIGENCE */}
-            <div className="rounded-xl border border-[#D9D9D6] bg-white p-7 space-y-4 shadow-2xs flex flex-col justify-between">
+            <div className="rounded-xl border-2 border-blue-200 bg-white p-7 space-y-4 shadow-2xs hover:border-blue-300 transition-all flex flex-col justify-between">
               <div className="space-y-3">
-                <div className="inline-block rounded-full bg-blue-100 px-3 py-1 text-[11px] font-mono font-bold text-blue-900 uppercase tracking-wider">
-                  INTELLIGENCE
+                <div className="flex items-center justify-between">
+                  <div className="inline-block rounded-full bg-blue-100 px-3.5 py-1 text-[11px] font-mono font-bold text-blue-900 uppercase tracking-wider">
+                    02 · INTELLIGENCE
+                  </div>
+                  <span className="text-blue-400 font-mono text-sm font-bold">→</span>
                 </div>
                 <h3 className="text-xl font-bold text-[#111827] leading-snug">
                   "FlowForge evaluates weather, port conditions, geopolitical exposure, vessel constraints and historical patterns."
@@ -272,10 +286,13 @@ export default function EnterpriseMaritimeLandingPage() {
             </div>
 
             {/* DECISION */}
-            <div className="rounded-xl border border-[#D9D9D6] bg-white p-7 space-y-4 shadow-2xs flex flex-col justify-between">
+            <div className="rounded-xl border-2 border-emerald-200 bg-white p-7 space-y-4 shadow-2xs hover:border-emerald-300 transition-all flex flex-col justify-between">
               <div className="space-y-3">
-                <div className="inline-block rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-mono font-bold text-emerald-900 uppercase tracking-wider">
-                  DECISION
+                <div className="flex items-center justify-between">
+                  <div className="inline-block rounded-full bg-emerald-100 px-3.5 py-1 text-[11px] font-mono font-bold text-emerald-900 uppercase tracking-wider">
+                    03 · DECISION
+                  </div>
+                  <span className="text-emerald-500 font-mono text-sm font-bold">✓</span>
                 </div>
                 <h3 className="text-xl font-bold text-[#111827] leading-snug">
                   "Operators receive ranked alternative routes with quantified risk, ETA and financial impact."
@@ -299,7 +316,7 @@ export default function EnterpriseMaritimeLandingPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
             {/* Card 1 */}
-            <div className="rounded-xl border border-[#D9D9D6] bg-white p-6 space-y-3 shadow-2xs hover:border-stone-400 transition-colors flex flex-col justify-between">
+            <div className="rounded-xl border border-[#D9D9D6] bg-white p-6 space-y-3 shadow-2xs hover:border-stone-400 hover:-translate-y-0.5 transition-all flex flex-col justify-between">
               <div className="space-y-2">
                 <span className="text-[10px] font-mono font-bold text-[#D94E28] block">01</span>
                 <h4 className="text-xs font-mono font-black text-[#111827] uppercase tracking-wider">DISRUPTION PREDICTION</h4>
@@ -310,7 +327,7 @@ export default function EnterpriseMaritimeLandingPage() {
             </div>
 
             {/* Card 2 */}
-            <div className="rounded-xl border border-[#D9D9D6] bg-white p-6 space-y-3 shadow-2xs hover:border-stone-400 transition-colors flex flex-col justify-between">
+            <div className="rounded-xl border border-[#D9D9D6] bg-white p-6 space-y-3 shadow-2xs hover:border-stone-400 hover:-translate-y-0.5 transition-all flex flex-col justify-between">
               <div className="space-y-2">
                 <span className="text-[10px] font-mono font-bold text-[#D94E28] block">02</span>
                 <h4 className="text-xs font-mono font-black text-[#111827] uppercase tracking-wider">ROUTE INTELLIGENCE</h4>
@@ -321,7 +338,7 @@ export default function EnterpriseMaritimeLandingPage() {
             </div>
 
             {/* Card 3 */}
-            <div className="rounded-xl border border-[#D9D9D6] bg-white p-6 space-y-3 shadow-2xs hover:border-stone-400 transition-colors flex flex-col justify-between">
+            <div className="rounded-xl border border-[#D9D9D6] bg-white p-6 space-y-3 shadow-2xs hover:border-stone-400 hover:-translate-y-0.5 transition-all flex flex-col justify-between">
               <div className="space-y-2">
                 <span className="text-[10px] font-mono font-bold text-[#D94E28] block">03</span>
                 <h4 className="text-xs font-mono font-black text-[#111827] uppercase tracking-wider">ETA FORECAST</h4>
@@ -332,7 +349,7 @@ export default function EnterpriseMaritimeLandingPage() {
             </div>
 
             {/* Card 4 */}
-            <div className="rounded-xl border border-[#D9D9D6] bg-white p-6 space-y-3 shadow-2xs hover:border-stone-400 transition-colors flex flex-col justify-between">
+            <div className="rounded-xl border border-[#D9D9D6] bg-white p-6 space-y-3 shadow-2xs hover:border-stone-400 hover:-translate-y-0.5 transition-all flex flex-col justify-between">
               <div className="space-y-2">
                 <span className="text-[10px] font-mono font-bold text-[#D94E28] block">04</span>
                 <h4 className="text-xs font-mono font-black text-[#111827] uppercase tracking-wider">MONTE CARLO</h4>
@@ -343,7 +360,7 @@ export default function EnterpriseMaritimeLandingPage() {
             </div>
 
             {/* Card 5 */}
-            <div className="rounded-xl border border-[#D9D9D6] bg-white p-6 space-y-3 shadow-2xs hover:border-stone-400 transition-colors col-span-1 sm:col-span-2 lg:col-span-1 flex flex-col justify-between">
+            <div className="rounded-xl border border-[#D9D9D6] bg-white p-6 space-y-3 shadow-2xs hover:border-stone-400 hover:-translate-y-0.5 transition-all col-span-1 sm:col-span-2 lg:col-span-1 flex flex-col justify-between">
               <div className="space-y-2">
                 <span className="text-[10px] font-mono font-bold text-[#D94E28] block">05</span>
                 <h4 className="text-xs font-mono font-black text-[#111827] uppercase tracking-wider">DECISION OPTIMIZATION</h4>
@@ -355,7 +372,7 @@ export default function EnterpriseMaritimeLandingPage() {
           </div>
         </section>
 
-        {/* 6. SYSTEM PIPELINE */}
+        {/* 6. SYSTEM PIPELINE WITH FLOW ARROWS */}
         <section className="rounded-xl border border-[#D9D9D6] bg-[#111827] text-white p-8 md:p-10 space-y-6 shadow-md">
           <div>
             <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#D94E28] block">
@@ -364,29 +381,43 @@ export default function EnterpriseMaritimeLandingPage() {
             <h2 className="text-xl font-bold text-white mt-1">Automated Intelligence Processing Pipeline</h2>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 text-center text-xs font-bold font-mono">
-            <div className="rounded-lg bg-slate-800 p-4 border border-slate-700 text-slate-100 flex flex-col justify-center">
+          <div className="flex flex-wrap items-center gap-2 text-center text-xs font-bold font-mono">
+            <div className="flex-1 min-w-[120px] rounded-lg bg-slate-800 p-3.5 border border-slate-700 text-slate-100 shadow-2xs">
               LIVE DATA
             </div>
-            <div className="rounded-lg bg-slate-800 p-4 border border-slate-700 text-slate-100 flex flex-col justify-center">
+            <span className="text-slate-500 font-bold text-xs">→</span>
+
+            <div className="flex-1 min-w-[120px] rounded-lg bg-slate-800 p-3.5 border border-slate-700 text-slate-100 shadow-2xs">
               RISK
             </div>
-            <div className="rounded-lg bg-slate-800 p-4 border border-slate-700 text-slate-100 flex flex-col justify-center">
+            <span className="text-slate-500 font-bold text-xs">→</span>
+
+            <div className="flex-1 min-w-[120px] rounded-lg bg-slate-800 p-3.5 border border-slate-700 text-slate-100 shadow-2xs">
               DISRUPTION
             </div>
-            <div className="rounded-lg bg-slate-800 p-4 border border-slate-700 text-slate-100 flex flex-col justify-center">
+            <span className="text-slate-500 font-bold text-xs">→</span>
+
+            <div className="flex-1 min-w-[120px] rounded-lg bg-slate-800 p-3.5 border border-slate-700 text-slate-100 shadow-2xs">
               ETA + COST
             </div>
-            <div className="rounded-lg bg-slate-800 p-4 border border-slate-700 text-slate-100 flex flex-col justify-center">
+            <span className="text-slate-500 font-bold text-xs">→</span>
+
+            <div className="flex-1 min-w-[120px] rounded-lg bg-slate-800 p-3.5 border border-slate-700 text-slate-100 shadow-2xs">
               ROUTE GENERATION
             </div>
-            <div className="rounded-lg bg-slate-800 p-4 border border-slate-700 text-slate-100 flex flex-col justify-center">
+            <span className="text-slate-500 font-bold text-xs">→</span>
+
+            <div className="flex-1 min-w-[120px] rounded-lg bg-slate-800 p-3.5 border border-slate-700 text-slate-100 shadow-2xs">
               MONTE CARLO
             </div>
-            <div className="rounded-lg bg-slate-800 p-4 border border-slate-700 text-slate-100 flex flex-col justify-center">
+            <span className="text-slate-500 font-bold text-xs">→</span>
+
+            <div className="flex-1 min-w-[120px] rounded-lg bg-slate-800 p-3.5 border border-slate-700 text-slate-100 shadow-2xs">
               OPTIMIZATION
             </div>
-            <div className="rounded-lg bg-[#D94E28] p-4 text-white font-black border border-orange-500 shadow-2xs flex flex-col justify-center">
+            <span className="text-slate-500 font-bold text-xs">→</span>
+
+            <div className="flex-1 min-w-[120px] rounded-lg bg-[#D94E28] p-3.5 text-white font-black border border-orange-500 shadow-xs">
               DECISION
             </div>
           </div>
@@ -407,7 +438,7 @@ export default function EnterpriseMaritimeLandingPage() {
           <div className="pt-2">
             <button
               onClick={() => setCreateScenarioOpen(true)}
-              className="rounded-lg bg-[#D94E28] px-8 py-4 text-xs font-mono font-bold text-white shadow-xs hover:bg-[#C8401C] transition-all uppercase tracking-wider inline-flex items-center gap-2"
+              className="rounded-lg bg-[#D94E28] px-8 py-4 text-xs font-mono font-bold text-white shadow-xs hover:bg-[#C8401C] transition-all uppercase tracking-wider inline-flex items-center gap-2 active:scale-[0.98]"
             >
               Run Your First Analysis <ArrowRight className="size-4" />
             </button>
