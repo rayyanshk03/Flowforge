@@ -2,31 +2,54 @@
 
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
-import {
-  ArrowRight,
-  AlertTriangle,
-  Activity,
-  Globe2,
-  MapPin,
-  RefreshCw,
-  Ship,
-  ShieldCheck,
-  CheckCircle2,
-  Navigation,
-  Sparkles,
-  Clock
-} from 'lucide-react'
+import { ArrowRight, CheckCircle2, Globe2 } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import Navbar from '@/components/Navbar'
 
 const GlobalMap = dynamic(() => import('@/components/GlobalMap'), {
   ssr: false,
   loading: () => (
-    <div className="h-[520px] w-full rounded-2xl bg-stone-100 border border-stone-200 flex items-center justify-center text-stone-400 font-sans text-xs">
+    <div className="h-[520px] w-full rounded-2xl bg-stone-100 border border-stone-200 flex items-center justify-center text-stone-400 text-xs">
       Loading Maritime Map…
     </div>
   )
 })
+
+const REROUTE_OPTIONS = [
+  {
+    id: 'A',
+    label: 'Via Port of Kaohsiung (TW)',
+    detail: 'Diverts through Taiwan Strait, avoids South China Sea congestion.',
+    eta: '+4.1h delay',
+    cost: '$14,200',
+    savings: '+$4,688',
+    risk: '8.2%',
+    distance: '3,240 nm',
+    recommended: true,
+  },
+  {
+    id: 'B',
+    label: 'Via Manila Int\'l Port (PH)',
+    detail: 'East Philippines Sea bypass, longer but avoids Luzon Strait.',
+    eta: '+9.3h delay',
+    cost: '$16,880',
+    savings: '+$2,008',
+    risk: '14.7%',
+    distance: '3,620 nm',
+    recommended: false,
+  },
+  {
+    id: 'C',
+    label: 'Via Busan New Port (KR)',
+    detail: 'Northern Korean Strait leg, maximum safety but highest cost.',
+    eta: '+16.2h delay',
+    cost: '$19,440',
+    savings: '−$1,552',
+    risk: '6.1%',
+    distance: '4,180 nm',
+    recommended: false,
+  },
+]
 
 export default function NetworkPage() {
   const [lastUpdated, setLastUpdated] = useState<string>('')
@@ -38,183 +61,175 @@ export default function NetworkPage() {
       try {
         const res = await fetch('http://localhost:8000/health')
         if (res.ok) setBackendStatus('CONNECTED')
-      } catch {
-        setBackendStatus('DISCONNECTED')
-      }
+      } catch { setBackendStatus('DISCONNECTED') }
     }
     fetchBackend()
-    const timer = setInterval(() => {
-      setLastUpdated(new Date().toLocaleTimeString())
-    }, 30000)
+    const timer = setInterval(() => setLastUpdated(new Date().toLocaleTimeString()), 30000)
     return () => clearInterval(timer)
   }, [])
 
   return (
-    <div className="min-h-screen bg-[#F9F8F6] text-stone-900 font-sans antialiased">
+    <div className="min-h-screen bg-[#F9F8F6] text-stone-900 antialiased" style={{ fontFamily: 'Inter, sans-serif' }}>
       <Navbar />
 
       <main className="mx-auto max-w-[1440px] px-4 py-6 md:px-10 space-y-6">
 
         {/* Page Header */}
-        <div className="space-y-1 border-b border-stone-200 pb-4">
-          <div className="inline-flex items-center gap-2 rounded-full border border-stone-200 bg-white px-3 py-0.5 text-[11px] font-semibold text-[#D94E28]">
-            <span className="size-2 rounded-full bg-[#D94E28] animate-pulse" />
-            ROUTE INTELLIGENCE
-          </div>
-          <h1 className="text-2xl md:text-4xl font-extrabold text-stone-900 tracking-tight">
-            Route Intelligence
+        <div className="border-b border-stone-200 pb-4 space-y-0.5">
+          <p className="text-[11px] font-semibold text-stone-400 uppercase tracking-widest">Route Intelligence</p>
+          <h1 className="text-2xl md:text-3xl font-extrabold text-stone-900 tracking-tight">
+            Singapore → Yokohama Corridor
           </h1>
-          <p className="text-xs md:text-sm text-stone-600">
-            Real-time maritime corridor tracking, route planning, and disruption visualization.
+          <p className="text-sm text-stone-500">
+            Active disruption detected. 3 reroute options evaluated. Best route recommended below.
           </p>
         </div>
 
         {/* Stats Strip */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-sans">
-          <div className="rounded-xl border border-stone-200 bg-white p-4 shadow-2xs space-y-1">
-            <span className="text-stone-500 font-medium block">Active Corridor</span>
-            <strong className="text-stone-900 font-bold text-sm">Shanghai → Yokohama</strong>
-          </div>
-          <div className="rounded-xl border border-stone-200 bg-white p-4 shadow-2xs space-y-1">
-            <span className="text-stone-500 font-medium block">Vessel</span>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+          <div className="rounded-xl border border-stone-200 bg-white p-4 space-y-0.5">
+            <span className="text-stone-400 font-medium block">Vessel</span>
             <strong className="text-[#D94E28] font-bold text-sm">FF Horizon (984210)</strong>
           </div>
-          <div className="rounded-xl border border-stone-200 bg-white p-4 shadow-2xs space-y-1">
-            <span className="text-stone-500 font-medium block">Disruption Risk</span>
-            <strong className="text-amber-700 font-bold text-sm">22.9% · Cyclone Alert</strong>
+          <div className="rounded-xl border border-stone-200 bg-white p-4 space-y-0.5">
+            <span className="text-stone-400 font-medium block">Baseline ETA</span>
+            <strong className="text-stone-900 font-bold text-sm">Aug 22 · 08:14 UTC</strong>
           </div>
-          <div className="rounded-xl border border-stone-200 bg-white p-4 shadow-2xs space-y-1">
-            <span className="text-stone-500 font-medium block">Recommended Diversion</span>
-            <strong className="text-emerald-700 font-bold text-sm">Kobe Port (ALT-KOBE-01)</strong>
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-0.5">
+            <span className="text-amber-700 font-medium block">Disruption Risk</span>
+            <strong className="text-amber-800 font-bold text-sm">31.4% — Typhoon Haikui</strong>
+          </div>
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 space-y-0.5">
+            <span className="text-emerald-700 font-medium block">Recommended Reroute</span>
+            <strong className="text-emerald-800 font-bold text-sm">Via Kaohsiung (ALT-A)</strong>
           </div>
         </div>
 
-        {/* Two Column: Map + Intelligence Panel */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        {/* Two-column: Map + Reroute panel */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
 
-          {/* Left: Interactive Map */}
-          <div className="lg:col-span-8 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm space-y-3">
-            <div className="flex items-center justify-between border-b border-stone-100 pb-2.5">
+          {/* Map */}
+          <div className="lg:col-span-8 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm space-y-2">
+            <div className="flex items-center justify-between pb-2 border-b border-stone-100">
               <div className="flex items-center gap-2">
                 <Globe2 className="size-4 text-[#D94E28]" />
-                <span className="text-sm font-bold text-stone-900">Global Maritime Digital Twin</span>
+                <span className="text-sm font-bold text-stone-900">Live Route Map</span>
+                <span className="text-[11px] font-semibold text-stone-400">Singapore → Yokohama</span>
               </div>
-              <span className="text-[11px] font-medium text-stone-500">
-                Updated {lastUpdated}
-              </span>
+              <span className="text-[11px] text-stone-400">Updated {lastUpdated}</span>
             </div>
-            <GlobalMap />
+            <GlobalMap
+              originPort="Singapore Tuas Hub (SG)"
+              destinationPort="Port of Yokohama (JP)"
+            />
           </div>
 
-          {/* Right: Intelligence Summary */}
-          <div className="lg:col-span-4 space-y-4">
-
-            {/* Route Status Card */}
-            <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm space-y-3 text-xs font-sans">
-              <span className="text-xs font-bold text-stone-500 uppercase tracking-wider block border-b border-stone-100 pb-2.5">
-                Voyage Monitor
-              </span>
-              <div className="space-y-2.5 text-stone-800">
-                <div className="flex justify-between">
-                  <span className="text-stone-500">Corridor:</span>
-                  <strong>Shanghai → Yokohama</strong>
-                </div>
-                <div className="flex justify-between border-t border-stone-100 pt-2">
-                  <span className="text-stone-500">Baseline ETA:</span>
-                  <strong>18 Aug · 14:35 UTC</strong>
-                </div>
-                <div className="flex justify-between border-t border-stone-100 pt-2">
-                  <span className="text-stone-500">Speed:</span>
-                  <strong>14.2 kn</strong>
-                </div>
-                <div className="flex justify-between border-t border-stone-100 pt-2">
-                  <span className="text-stone-500">Heading:</span>
-                  <strong>065° ENE</strong>
-                </div>
-                <div className="flex justify-between border-t border-stone-100 pt-2">
-                  <span className="text-stone-500">Cargo:</span>
-                  <strong className="text-right max-w-[140px]">Semiconductors ($24.5M)</strong>
-                </div>
-              </div>
+          {/* Reroute Options */}
+          <div className="lg:col-span-4 space-y-3">
+            <div className="border-b border-stone-200 pb-2">
+              <p className="text-[11px] font-semibold text-stone-400 uppercase tracking-widest">Available Reroutes</p>
+              <h2 className="text-base font-bold text-stone-900 mt-0.5">3 Alternatives Evaluated</h2>
             </div>
 
-            {/* Risk Alert Card */}
-            <div className="rounded-2xl border-2 border-amber-300 bg-white p-5 shadow-sm space-y-3">
-              <div className="flex items-center justify-between border-b border-stone-100 pb-2.5">
-                <span className="text-xs font-bold text-stone-500 uppercase tracking-wider">Disruption Risk</span>
-                <span className="text-[11px] font-bold text-amber-900 bg-amber-50 border border-amber-300 px-2.5 py-0.5 rounded-full">
-                  MODERATE
-                </span>
-              </div>
-              <div className="text-4xl font-extrabold text-[#D94E28]">22.9%</div>
-              <p className="text-[11px] text-stone-500 leading-relaxed">
-                Cyclone warning in East China Sea. Kobe Port diversion recommended.
-              </p>
-              <div className="space-y-2 pt-1 text-xs">
-                <div className="flex justify-between font-medium text-stone-700">
-                  <span>Port Congestion</span><span>45%</span>
+            {REROUTE_OPTIONS.map(r => (
+              <div
+                key={r.id}
+                className={`rounded-xl border p-4 space-y-3 ${
+                  r.recommended
+                    ? 'border-emerald-300 bg-emerald-50'
+                    : 'border-stone-200 bg-white'
+                }`}
+              >
+                {/* Header */}
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      {r.recommended && <CheckCircle2 className="size-3.5 text-emerald-600 shrink-0" />}
+                      <span className={`text-xs font-bold ${r.recommended ? 'text-emerald-900' : 'text-stone-900'}`}>
+                        {r.label}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-stone-400 mt-0.5 leading-snug">{r.detail}</p>
+                  </div>
+                  {r.recommended && (
+                    <span className="shrink-0 text-[10px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-full">
+                      RECOMMENDED
+                    </span>
+                  )}
                 </div>
-                <div className="w-full bg-stone-100 rounded-full h-1.5">
-                  <div className="bg-amber-500 h-1.5 rounded-full" style={{ width: '45%' }} />
-                </div>
-                <div className="flex justify-between font-medium text-stone-700 pt-1">
-                  <span>Geo Exposure</span><span>85%</span>
-                </div>
-                <div className="w-full bg-stone-100 rounded-full h-1.5">
-                  <div className="bg-[#D94E28] h-1.5 rounded-full" style={{ width: '85%' }} />
-                </div>
-              </div>
-            </div>
 
-            {/* Financial Impact Card */}
-            <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm space-y-3 text-xs font-sans">
-              <span className="text-xs font-bold text-stone-500 uppercase tracking-wider block border-b border-stone-100 pb-2.5">
-                Financial Impact
-              </span>
-              <div className="space-y-2 text-stone-800">
-                <div className="flex justify-between">
-                  <span className="text-stone-500">Baseline Cost:</span>
-                  <span className="line-through text-stone-400">$18,888</span>
+                {/* Metrics grid */}
+                <div className="grid grid-cols-2 gap-2 text-[11px]">
+                  <div className="bg-white rounded-lg border border-stone-200 p-2 space-y-0.5">
+                    <span className="text-stone-400 font-medium block">ETA Impact</span>
+                    <strong className="text-stone-800">{r.eta}</strong>
+                  </div>
+                  <div className="bg-white rounded-lg border border-stone-200 p-2 space-y-0.5">
+                    <span className="text-stone-400 font-medium block">Risk Level</span>
+                    <strong className={r.recommended ? 'text-emerald-700' : 'text-amber-700'}>{r.risk}</strong>
+                  </div>
+                  <div className="bg-white rounded-lg border border-stone-200 p-2 space-y-0.5">
+                    <span className="text-stone-400 font-medium block">Route Cost</span>
+                    <strong className="text-stone-800">{r.cost}</strong>
+                  </div>
+                  <div className="bg-white rounded-lg border border-stone-200 p-2 space-y-0.5">
+                    <span className="text-stone-400 font-medium block">Net Savings</span>
+                    <strong className={r.savings.startsWith('+') ? 'text-emerald-700' : 'text-red-600'}>{r.savings}</strong>
+                  </div>
                 </div>
-                <div className="flex justify-between border-t border-stone-100 pt-2">
-                  <span className="text-stone-500">Kobe Diversion:</span>
-                  <strong className="text-emerald-700">$10,510</strong>
-                </div>
-                <div className="flex justify-between border-t border-stone-100 pt-2">
-                  <span className="text-stone-500">Net Savings:</span>
-                  <strong className="text-emerald-700 font-extrabold text-sm">+$8,377</strong>
-                </div>
-              </div>
-            </div>
 
+                {r.recommended && (
+                  <div className="text-[11px] text-emerald-700 font-semibold flex items-center gap-1.5 border-t border-emerald-200 pt-2">
+                    <CheckCircle2 className="size-3.5" />
+                    Best ETA/cost balance · Lowest viable risk
+                  </div>
+                )}
+              </div>
+            ))}
+
+            {/* Voyage summary */}
+            <div className="rounded-xl border border-stone-200 bg-white p-4 space-y-2.5 text-xs">
+              <span className="text-[11px] font-semibold text-stone-400 uppercase tracking-widest block border-b border-stone-100 pb-2">Voyage Summary</span>
+              {[
+                { l: 'Origin', v: 'Singapore Tuas Hub (SG)' },
+                { l: 'Destination', v: 'Port of Yokohama (JP)' },
+                { l: 'Distance', v: '3,240 nm (best route)' },
+                { l: 'Speed', v: '13.8 kn' },
+                { l: 'Cargo', v: 'Electronics ($18.2M)' },
+                { l: 'Carrier', v: 'COSCO Shipping Lines' },
+              ].map(({ l, v }) => (
+                <div key={l} className="flex justify-between">
+                  <span className="text-stone-400">{l}</span>
+                  <span className="text-stone-800 font-medium text-right max-w-[160px]">{v}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* Bottom Action Bar */}
-        <div className="rounded-2xl border border-stone-200 bg-white p-4 md:p-5 flex flex-wrap items-center justify-between gap-4 shadow-sm font-sans">
-          <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-stone-700">
+        {/* Bottom CTA */}
+        <div className="rounded-xl border border-stone-200 bg-white p-4 flex flex-wrap items-center justify-between gap-4 shadow-sm">
+          <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-stone-600">
             <span className="font-bold text-stone-900 uppercase tracking-wider text-[11px]">Data Sources:</span>
-            {['AIS Telemetry', 'Weather', 'Port Status', 'Geopolitical', 'Carrier'].map(src => (
-              <span key={src} className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-0.5 rounded-md font-semibold text-[11px]">
+            {['AIS Telemetry', 'OpenMeteo Weather', 'Port Status API', 'Geopolitical Alerts'].map(src => (
+              <span key={src} className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-md font-semibold text-[11px]">
                 <CheckCircle2 className="size-3 text-emerald-500" /> {src}
               </span>
             ))}
           </div>
           <Link
             href="/simulation"
-            className="rounded-xl bg-[#D94E28] hover:bg-[#C8401C] transition-all px-7 py-3 text-xs font-bold text-white shadow-sm flex items-center gap-2 active:scale-[0.98]"
+            className="rounded-xl bg-[#D94E28] hover:bg-[#C8401C] transition-all px-7 py-2.5 text-xs font-bold text-white flex items-center gap-2 active:scale-[0.98]"
           >
-            Continue to Monte Carlo Simulation <ArrowRight className="size-4" />
+            Run Monte Carlo Simulation <ArrowRight className="size-4" />
           </Link>
         </div>
-
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-stone-200 bg-white py-5 text-xs text-stone-500 mt-10 font-sans">
-        <div className="mx-auto max-w-[1440px] px-4 md:px-10 flex flex-wrap items-center justify-between gap-4 font-medium">
-          <div>FLOWFORGE MARITIME DECISION INTELLIGENCE</div>
-          <div>© {new Date().getFullYear()} FLOWFORGE. ALL RIGHTS RESERVED.</div>
+      <footer className="border-t border-stone-200 bg-white py-5 text-xs text-stone-400 mt-6">
+        <div className="mx-auto max-w-[1440px] px-4 md:px-10 flex flex-wrap items-center justify-between gap-4 font-medium tracking-wide">
+          <div>FlowForge Maritime Decision Intelligence</div>
+          <div>© {new Date().getFullYear()} FlowForge. All Rights Reserved.</div>
         </div>
       </footer>
     </div>
