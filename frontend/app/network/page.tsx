@@ -22,6 +22,7 @@ import CreateScenarioModal from '@/components/CreateScenarioModal'
 import MaritimeNetworkGraph from '@/components/MaritimeNetworkGraph'
 import MonteCarloArrivalChart from '@/components/MonteCarloArrivalChart'
 import BusinessActionLayer from '@/components/BusinessActionLayer'
+import CostIntelligenceView from '@/components/CostIntelligenceView'
 
 const GlobalMap = dynamic(() => import('@/components/GlobalMap'), {
   ssr: false,
@@ -602,6 +603,9 @@ export default function NetworkPage() {
           destPort={scenarioState.destPort}
           reroutePath={reroutes[0]?.waypoints || [scenarioState.originPort, 'Jaipur', scenarioState.destPort]}
         />
+
+        {/* ── SECTION 14: COST INTELLIGENCE & FINANCIAL OPTIMIZATION ──────── */}
+        <CostIntelligenceView originPort={scenarioState.originPort} destPort={scenarioState.destPort} />
 
         {/* ── SECTION 4: DATA SOURCES & BOTTOM CTA ────────────────────── */}
         <div className="rounded-lg border border-stone-300 bg-white p-5 md:p-6 flex flex-wrap items-center justify-between gap-5 shadow-2xs font-mono">
