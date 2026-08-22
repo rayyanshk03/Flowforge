@@ -24,11 +24,14 @@ import DecisionHistoryDrawer from '@/components/DecisionHistoryDrawer'
 import SystemSettingsModal from '@/components/SystemSettingsModal'
 import CreateScenarioModal from '@/components/CreateScenarioModal'
 
-const GlobalMap = dynamic(() => import('@/components/GlobalMap'), {
+const MapboxMap = dynamic(() => import('@/components/MapboxMap'), {
   ssr: false,
   loading: () => (
-    <div className="h-[520px] w-full rounded-lg bg-[#F4F2EC] border border-stone-300 flex items-center justify-center text-stone-500 text-xs font-mono font-bold">
-      LOADING MARITIME NAVMESH…
+    <div className="h-[540px] w-full rounded-lg bg-[#111] border border-stone-700 flex items-center justify-center text-stone-500 text-xs font-mono font-bold">
+      <div className="flex flex-col items-center gap-3">
+        <div className="size-8 border-2 border-[#D94E28] border-t-transparent rounded-full animate-spin" />
+        <span>INITIALIZING MAPBOX GL + DECK.GL…</span>
+      </div>
     </div>
   )
 })
@@ -264,7 +267,7 @@ export default function NetworkPage() {
 
               {/* Map */}
               <div className="p-4">
-                <GlobalMap
+                <MapboxMap
                   originPort={scenarioState.originPort}
                   destinationPort={scenarioState.destPort}
                   activeReroute={activeReroute}

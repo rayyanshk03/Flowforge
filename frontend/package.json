@@ -10,9 +10,13 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@deck.gl/core": "^9.3.10",
+    "@deck.gl/layers": "^9.3.10",
+    "@deck.gl/mapbox": "^9.3.10",
     "@turf/turf": "^7.4.0",
     "@vercel/analytics": "^2.0.1",
     "canvas-confetti": "^1.9.4",
+    "deck.gl": "^9.3.10",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.395.0",
     "mapbox-gl": "^3.29.0",
