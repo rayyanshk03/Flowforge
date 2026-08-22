@@ -156,48 +156,94 @@ export default function EnterpriseMaritimeLandingPage() {
             <span className="inline-block rounded-full bg-blue-50 border border-blue-200 px-3 py-0.5 text-[11px] font-semibold text-blue-900">How It Works</span>
             <h2 className="text-3xl md:text-5xl font-extrabold text-stone-900 tracking-tight">5 steps. One decision.</h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+
+          {/* Step flow — horizontal numbered text blocks */}
+          <div className="flex flex-col md:flex-row items-stretch gap-0">
             {[
-              { step: '01', title: 'Data Ingestion', tag: '8 Live Feeds', icon: '📡' },
-              { step: '02', title: 'Risk Scoring', tag: 'ML Classifier', icon: '🧠' },
-              { step: '03', title: 'Route Generation', tag: 'A* Router', icon: '🗺️' },
-              { step: '04', title: 'Monte Carlo', tag: '10,000 Trials', icon: '🎲' },
-              { step: '05', title: 'Decision', tag: 'XGBoost Engine', icon: '✅' },
-            ].map(({ step, title, tag, icon }) => (
-              <div key={step} className="rounded-2xl border border-stone-200 bg-white p-7 shadow-sm hover:shadow-md hover:border-[#D94E28]/30 transition-all text-center space-y-4 flex flex-col items-center">
-                <div className="text-5xl">{icon}</div>
-                <span className="text-[11px] font-bold text-[#D94E28]">STEP {step}</span>
-                <h4 className="text-sm font-extrabold text-stone-900">{title}</h4>
-                <span className="text-[11px] font-semibold text-stone-500 bg-stone-100 px-3 py-0.5 rounded-full">{tag}</span>
-              </div>
+              { step: '01', title: 'Data Ingestion', body: 'Live AIS vessel telemetry, weather forecasts, port congestion & geopolitical feeds.', tag: '8 Live Feeds' },
+              { step: '02', title: 'Risk Scoring', body: 'ExtraTrees ML classifier scores corridor risk and evaluates typhoon or strike exposure.', tag: 'ML Classifier' },
+              { step: '03', title: 'Route Generation', body: 'A* spatial router computes feasible alternate diversion paths and viable port options.', tag: 'A* Spatial Router' },
+              { step: '04', title: 'Monte Carlo', body: 'Executes 10,000 stochastic trials to compute P50, P90, and P95 arrival time percentiles.', tag: '10,000 Trials' },
+              { step: '05', title: 'Decision', body: 'XGBoost cost engine ranks baseline vs. diversion and quantifies net financial savings.', tag: 'Optimal Output', highlight: true },
+            ].map(({ step, title, body, tag, highlight }, i, arr) => (
+              <React.Fragment key={step}>
+                <div className={`flex-1 rounded-2xl border ${ highlight ? 'border-[#D94E28] bg-stone-900' : 'border-stone-200 bg-white' } p-6 space-y-3 shadow-sm`}>
+                  <div className="flex items-center justify-between">
+                    <span className={`text-[10px] font-black tracking-widest uppercase ${ highlight ? 'text-[#D94E28]' : 'text-stone-400' }`}>STEP {step}</span>
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${ highlight ? 'bg-[#D94E28]/20 text-[#D94E28]' : 'bg-stone-100 text-stone-500' }`}>{tag}</span>
+                  </div>
+                  <h4 className={`text-base font-extrabold ${ highlight ? 'text-white' : 'text-stone-900' }`}>{title}</h4>
+                  <p className={`text-xs leading-relaxed ${ highlight ? 'text-stone-400' : 'text-stone-500' }`}>{body}</p>
+                </div>
+                {i < arr.length - 1 && (
+                  <div className="hidden md:flex items-center px-1 text-stone-300 text-lg font-light select-none">→</div>
+                )}
+              </React.Fragment>
             ))}
           </div>
         </section>
 
-        {/* 5. LIVE INTELLIGENCE METRICS */}
-        <section className="rounded-2xl border border-stone-200 bg-white p-7 md:p-10 space-y-6 shadow-sm">
-          <div className="flex flex-wrap items-end justify-between gap-3 border-b border-stone-100 pb-5">
-            <div>
-              <span className="text-[11px] font-bold text-[#D94E28] uppercase tracking-wider block mb-1">Live Intelligence</span>
-              <h3 className="text-2xl font-extrabold text-stone-900">Shanghai → Yokohama</h3>
-            </div>
-            <span className="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full flex items-center gap-1.5">
-              <span className="size-2 rounded-full bg-emerald-500 animate-pulse" /> Live Feed
-            </span>
+        {/* 5. KEY CAPABILITIES */}
+        <section className="space-y-8">
+          <div className="text-center space-y-3">
+            <span className="inline-block rounded-full bg-stone-100 border border-stone-200 px-3 py-0.5 text-[11px] font-semibold text-stone-700">Platform Capabilities</span>
+            <h2 className="text-3xl md:text-5xl font-extrabold text-stone-900 tracking-tight">Built for the decisions<br className="hidden md:inline" /> that cost millions.</h2>
           </div>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
-            {[
-              { label: 'Disruption Risk', value: '22.9%', sub: 'Cyclone Alert', valueColor: 'text-[#D94E28]' },
-              { label: 'Port Congestion', value: '45%', sub: 'Shanghai · 1.2d delay', valueColor: 'text-amber-700' },
-              { label: 'Net Savings', value: '+$8,377', sub: 'Kobe diversion', valueColor: 'text-emerald-600' },
-              { label: 'P90 ETA Risk', value: '298h', sub: '10,000 MC trials', valueColor: 'text-stone-800' },
-            ].map(({ label, value, sub, valueColor }) => (
-              <div key={label} className="rounded-xl border border-stone-200 bg-[#F9F8F6] p-6 space-y-1.5">
-                <span className="text-[11px] font-semibold text-stone-500 block">{label}</span>
-                <div className={`text-4xl font-extrabold ${valueColor}`}>{value}</div>
-                <span className="text-xs font-medium text-stone-500">{sub}</span>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="rounded-2xl border border-stone-200 bg-white p-8 space-y-4 shadow-sm hover:shadow-md transition-all">
+              <div className="text-xs font-black text-[#D94E28] uppercase tracking-widest">Disruption Prediction</div>
+              <h3 className="text-2xl font-extrabold text-stone-900">48–72h Early Warning</h3>
+              <p className="text-sm text-stone-500 leading-relaxed">ML classifier (ExtraTrees) detects typhoons, port strikes, and canal closures days before impact — giving fleet managers time to act.</p>
+              <div className="pt-3 border-t border-stone-100 flex items-center gap-2 text-xs font-semibold text-stone-600">
+                <span className="size-1.5 rounded-full bg-[#D94E28]" /> ExtraTrees v1.8 Classifier
               </div>
-            ))}
+            </div>
+
+            <div className="rounded-2xl border border-stone-200 bg-white p-8 space-y-4 shadow-sm hover:shadow-md transition-all">
+              <div className="text-xs font-black text-[#D94E28] uppercase tracking-widest">Route Intelligence</div>
+              <h3 className="text-2xl font-extrabold text-stone-900">A* Bathymetric Routing</h3>
+              <p className="text-sm text-stone-500 leading-relaxed">Globally-aware maritime router computes 100% open-water diversion paths across 60+ ports, respecting TSS fairways and draft constraints.</p>
+              <div className="pt-3 border-t border-stone-100 flex items-center gap-2 text-xs font-semibold text-stone-600">
+                <span className="size-1.5 rounded-full bg-[#D94E28]" /> 60+ Global Commercial Ports
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-stone-200 bg-white p-8 space-y-4 shadow-sm hover:shadow-md transition-all">
+              <div className="text-xs font-black text-[#D94E28] uppercase tracking-widest">Stochastic ETA</div>
+              <h3 className="text-2xl font-extrabold text-stone-900">Monte Carlo Simulation</h3>
+              <p className="text-sm text-stone-500 leading-relaxed">10,000 stochastic trials generate P50, P90, and P95 arrival time distributions — replacing single-point guesses with full probability curves.</p>
+              <div className="pt-3 border-t border-stone-100 flex items-center gap-2 text-xs font-semibold text-stone-600">
+                <span className="size-1.5 rounded-full bg-[#D94E28]" /> P50 / P90 / P95 Percentiles
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-stone-200 bg-white p-8 space-y-4 shadow-sm hover:shadow-md transition-all">
+              <div className="text-xs font-black text-[#D94E28] uppercase tracking-widest">Financial Optimization</div>
+              <h3 className="text-2xl font-extrabold text-stone-900">Real-Time Cost Ranking</h3>
+              <p className="text-sm text-stone-500 leading-relaxed">XGBoost engine instantly calculates net savings of each diversion option — fuel surcharges, demurrage, berth fees — vs. the original route.</p>
+              <div className="pt-3 border-t border-stone-100 flex items-center gap-2 text-xs font-semibold text-stone-600">
+                <span className="size-1.5 rounded-full bg-[#D94E28]" /> Avg. +$8,377 Saved Per Diversion
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-stone-200 bg-white p-8 space-y-4 shadow-sm hover:shadow-md transition-all">
+              <div className="text-xs font-black text-[#D94E28] uppercase tracking-widest">Operational Control</div>
+              <h3 className="text-2xl font-extrabold text-stone-900">Human-in-the-Loop</h3>
+              <p className="text-sm text-stone-500 leading-relaxed">Every FlowForge recommendation goes through an audit-ready approval gate. Fleet managers stay in command — the system supports, not replaces, judgment.</p>
+              <div className="pt-3 border-t border-stone-100 flex items-center gap-2 text-xs font-semibold text-stone-600">
+                <span className="size-1.5 rounded-full bg-[#D94E28]" /> Audit Trail & Decision Log
+              </div>
+            </div>
+
+            <div className="rounded-2xl bg-stone-900 p-8 space-y-4 shadow-sm">
+              <div className="text-xs font-black text-[#D94E28] uppercase tracking-widest">Decision Speed</div>
+              <h3 className="text-2xl font-extrabold text-white">Under 2 Seconds</h3>
+              <p className="text-sm text-stone-400 leading-relaxed">From disruption signal to ranked operational recommendation. No waiting, no manual coordination, no guesswork.</p>
+              <div className="pt-3 border-t border-stone-700 flex items-center gap-2 text-xs font-semibold text-stone-500">
+                <span className="size-1.5 rounded-full bg-[#D94E28]" /> Full Pipeline in &lt;2s
+              </div>
+            </div>
           </div>
         </section>
 
