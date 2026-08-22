@@ -146,6 +146,8 @@ export const PORT_CONGESTION_DATA: Record<string, {
   containerBacklog: string
   berthAvailability: string
   craneUtilization: string
+  shortLabel: string
+  unlocode: string
 }> = {
   'Shanghai Yangshan Port (CN)': {
     status: 'Heavy',
@@ -154,7 +156,9 @@ export const PORT_CONGESTION_DATA: Record<string, {
     waitingTime: '48.5 hours',
     containerBacklog: '89,500 TEU',
     berthAvailability: '96% Occupied (4% Available)',
-    craneUtilization: '94% Quay Rate'
+    craneUtilization: '94% Quay Rate',
+    shortLabel: 'Shanghai',
+    unlocode: 'CNSHA'
   },
   'Singapore Tuas Hub (SG)': {
     status: 'Normal',
@@ -163,7 +167,9 @@ export const PORT_CONGESTION_DATA: Record<string, {
     waitingTime: '4.2 hours',
     containerBacklog: '12,400 TEU',
     berthAvailability: '68% Occupied (32% Available)',
-    craneUtilization: '74% Quay Rate'
+    craneUtilization: '74% Quay Rate',
+    shortLabel: 'Singapore',
+    unlocode: 'SGSIN'
   },
   'Port of Yokohama (JP)': {
     status: 'Normal',
@@ -172,7 +178,9 @@ export const PORT_CONGESTION_DATA: Record<string, {
     waitingTime: '2.8 hours',
     containerBacklog: '6,100 TEU',
     berthAvailability: '58% Occupied (42% Available)',
-    craneUtilization: '65% Quay Rate'
+    craneUtilization: '65% Quay Rate',
+    shortLabel: 'Yokohama',
+    unlocode: 'JPYOK'
   },
   'Port of Kobe (JP)': {
     status: 'Normal',
@@ -181,7 +189,9 @@ export const PORT_CONGESTION_DATA: Record<string, {
     waitingTime: '3.1 hours',
     containerBacklog: '7,800 TEU',
     berthAvailability: '62% Occupied (38% Available)',
-    craneUtilization: '68% Quay Rate'
+    craneUtilization: '68% Quay Rate',
+    shortLabel: 'Kobe',
+    unlocode: 'JPUKB'
   },
   'Jebel Ali Port (AE)': {
     status: 'Medium',
@@ -190,7 +200,9 @@ export const PORT_CONGESTION_DATA: Record<string, {
     waitingTime: '18.4 hours',
     containerBacklog: '34,200 TEU',
     berthAvailability: '84% Occupied (16% Available)',
-    craneUtilization: '82% Quay Rate'
+    craneUtilization: '82% Quay Rate',
+    shortLabel: 'Jebel Ali (Dubai)',
+    unlocode: 'AEJEA'
   },
   'Rotterdam Gateway (NL)': {
     status: 'Medium',
@@ -199,7 +211,9 @@ export const PORT_CONGESTION_DATA: Record<string, {
     waitingTime: '22.1 hours',
     containerBacklog: '41,800 TEU',
     berthAvailability: '87% Occupied (13% Available)',
-    craneUtilization: '85% Quay Rate'
+    craneUtilization: '85% Quay Rate',
+    shortLabel: 'Rotterdam',
+    unlocode: 'NLRTM'
   },
   'Jawaharlal Nehru Port (Mumbai, IN)': {
     status: 'Heavy',
@@ -208,7 +222,9 @@ export const PORT_CONGESTION_DATA: Record<string, {
     waitingTime: '52.0 hours',
     containerBacklog: '64,100 TEU',
     berthAvailability: '94% Occupied (6% Available)',
-    craneUtilization: '91% Quay Rate'
+    craneUtilization: '91% Quay Rate',
+    shortLabel: 'Mumbai (JNPT)',
+    unlocode: 'INNSA'
   },
   'Port of Chittagong (BD)': {
     status: 'Heavy',
@@ -217,7 +233,9 @@ export const PORT_CONGESTION_DATA: Record<string, {
     waitingTime: '68.5 hours',
     containerBacklog: '48,200 TEU',
     berthAvailability: '98% Occupied (2% Available)',
-    craneUtilization: '96% Quay Rate'
+    craneUtilization: '96% Quay Rate',
+    shortLabel: 'Chittagong',
+    unlocode: 'BDCGP'
   },
   'Busan New Port (KR)': {
     status: 'Medium',
@@ -226,7 +244,9 @@ export const PORT_CONGESTION_DATA: Record<string, {
     waitingTime: '16.8 hours',
     containerBacklog: '28,900 TEU',
     berthAvailability: '79% Occupied (21% Available)',
-    craneUtilization: '78% Quay Rate'
+    craneUtilization: '78% Quay Rate',
+    shortLabel: 'Busan',
+    unlocode: 'KRPUS'
   },
   'Port of Hamburg (DE)': {
     status: 'Normal',
@@ -235,7 +255,9 @@ export const PORT_CONGESTION_DATA: Record<string, {
     waitingTime: '5.6 hours',
     containerBacklog: '14,300 TEU',
     berthAvailability: '71% Occupied (29% Available)',
-    craneUtilization: '72% Quay Rate'
+    craneUtilization: '72% Quay Rate',
+    shortLabel: 'Hamburg',
+    unlocode: 'DEHAM'
   }
 }
 

@@ -513,62 +513,73 @@ export default function NetworkPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {Object.entries(PORT_CONGESTION_DATA)
               .filter(([_, info]) => portStatusFilter === 'ALL' || info.status === portStatusFilter)
-              .map(([name, info]) => {
-                const shortName = name.split(' ')[0].replace(/[^a-zA-Z]/g, '') || name
+              .map(([fullName, info]) => {
+                const isOrigin = scenarioState.originPort?.toLowerCase().includes(info.shortLabel.toLowerCase().split(' ')[0])
+                const isDest = scenarioState.destPort?.toLowerCase().includes(info.shortLabel.toLowerCase().split(' ')[0])
+
                 return (
                   <div
-                    key={name}
-                    className={`rounded-xl border-2 p-4 space-y-3 transition-all ${
-                      info.status === 'Heavy'
-                        ? 'border-red-300 bg-red-50/40 shadow-xs'
-                        : info.status === 'Medium'
-                        ? 'border-amber-300 bg-amber-50/40'
-                        : 'border-emerald-300 bg-emerald-50/40'
+                    key={fullName}
+                    className={`rounded-xl border-2 p-5 space-y-3.5 transition-all font-mono shadow-xs ${
+                      isOrigin || isDest
+                        ? 'border-[#D94E28] bg-white ring-2 ring-orange-200'
+                        : 'border-stone-300 bg-white hover:border-stone-400'
                     }`}
                   >
                     {/* Header */}
-                    <div className="flex items-center justify-between border-b border-stone-200/80 pb-2">
-                      <div className="font-black text-stone-900 text-sm flex items-center gap-1.5">
-                        <span>{shortName} ⚓</span>
+                    <div className="flex items-start justify-between border-b border-stone-200 pb-3 gap-2">
+                      <div>
+                        <div className="font-black text-[#151719] text-sm flex items-center gap-1.5">
+                          <span>{info.shortLabel} ⚓</span>
+                          <span className="text-[10px] font-mono text-stone-500 font-bold bg-stone-100 px-1.5 py-0.5 rounded border border-stone-200">
+                            {info.unlocode}
+                          </span>
+                        </div>
+                        {(isOrigin || isDest) && (
+                          <span className="text-[9px] font-mono font-black text-[#D94E28] bg-orange-50 border border-[#D94E28] px-1.5 py-0.5 rounded mt-1 inline-block">
+                            {isOrigin ? '⭐ SELECTED ORIGIN PORT' : '⭐ SELECTED DESTINATION PORT'}
+                          </span>
+                        )}
                       </div>
                       <span
-                        className="text-[10px] font-black px-2.5 py-0.5 rounded border"
-                        style={{
-                          background: info.status === 'Heavy' ? '#FEE2E2' : info.status === 'Medium' ? '#FEF3C7' : '#D1FAE5',
-                          borderColor: info.color,
-                          color: info.color === '#10B981' ? '#047857' : info.color
-                        }}
+                        className={`text-[10px] font-black px-2.5 py-1 rounded border shrink-0 ${
+                          info.status === 'Heavy'
+                            ? 'bg-red-50 border-red-300 text-red-800'
+                            : info.status === 'Medium'
+                            ? 'bg-amber-50 border-amber-300 text-amber-900'
+                            : 'bg-emerald-50 border-emerald-300 text-emerald-800'
+                        }`}
                       >
                         {info.badge}
                       </span>
                     </div>
 
-                    {/* 4 User-Requested Metrics Grid */}
-                    <div className="grid grid-cols-2 gap-2 text-[11px]">
+                    {/* 4 Metrics Grid — Simulation Theme (#F4F2EC Fills, Stone-300 Borders) */}
+                    <div className="grid grid-cols-2 gap-2.5 text-xs">
                       {/* 1. Waiting Time */}
-                      <div className="bg-white rounded border border-stone-200 p-2 space-y-0.5">
-                        <span className="text-stone-400 font-bold block text-[9px] uppercase">⏱️ Waiting Time</span>
-                        <strong className="text-stone-900 block font-black">{info.waitingTime}</strong>
+                      <div className="bg-[#F4F2EC] rounded-lg border border-stone-300 p-2.5 space-y-0.5">
+                        <span className="text-[9px] font-black text-stone-500 block uppercase tracking-wider">⏱️ WAITING TIME</span>
+                        <strong className="text-[#151719] font-black text-sm block font-mono">{info.waitingTime}</strong>
                       </div>
 
                       {/* 2. Container Backlog */}
-                      <div className="bg-white rounded border border-stone-200 p-2 space-y-0.5">
-                        <span className="text-stone-400 font-bold block text-[9px] uppercase">📦 Backlog</span>
-                        <strong className="text-stone-900 block font-black">{info.containerBacklog}</strong>
+                      <div className="bg-[#F4F2EC] rounded-lg border border-stone-300 p-2.5 space-y-0.5">
+                        <span className="text-[9px] font-black text-stone-500 block uppercase tracking-wider">📦 BACKLOG</span>
+                        <strong className="text-[#151719] font-black text-sm block font-mono">{info.containerBacklog}</strong>
                       </div>
 
                       {/* 3. Berth Availability */}
-                      <div className="bg-white rounded border border-stone-200 p-2 space-y-0.5">
-                        <span className="text-stone-400 font-bold block text-[9px] uppercase">⚓ Berth Occupancy</span>
-                        <strong className="text-stone-900 block font-black text-[10px] truncate" title={info.berthAvailability}>
+                      <div className="bg-[#F4F2EC] rounded-lg border border-stone-300 p-2.5 space-y-0.5">
+                        <span className="text-[9px] font-black text-stone-500 block uppercase tracking-wider">⚓ BERTH OCCUPANCY</span>
+                        <strong className="text-[#151719] font-black text-[11px] block font-mono truncate" title={info.berthAvailability}>
                           {info.berthAvailability}
                         </strong>
                       </div>
 
                       {/* 4. Crane Utilization */}
-                      <div className="bg-white rounded border border-stone-200 p-2 space-y-0.5">
-                        <span className="text-stone-400 font-bold block text-[9px] uppercase">🏗️ Crane Utilization</span>
-                        <strong className="text-stone-900 block font-black">{info.craneUtilization}</strong>
+                      <div className="bg-[#F4F2EC] rounded-lg border border-stone-300 p-2.5 space-y-0.5">
+                        <span className="text-[9px] font-black text-stone-500 block uppercase tracking-wider">🏗️ CRANE RATE</span>
+                        <strong className="text-[#151719] font-black text-sm block font-mono">{info.craneUtilization}</strong>
                       </div>
                     </div>
                   </div>
