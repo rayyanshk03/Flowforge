@@ -16,53 +16,17 @@ const GlobalMap = dynamic(() => import('@/components/GlobalMap'), {
   )
 })
 
-const REROUTE_OPTIONS = [
-  {
-    id: 'A',
-    label: 'Via Port of Kaohsiung (TW)',
-    detail: 'Diverts through Taiwan Strait, avoids South China Sea congestion.',
-    eta: '+4.1h delay',
-    cost: '$14,200',
-    savings: '+$4,688',
-    risk: '8.2%',
-    distance: '3,240 nm',
-    recommended: true,
-  },
-  {
-    id: 'B',
-    label: 'Via Manila Int\'l Port (PH)',
-    detail: 'East Philippines Sea bypass, longer but avoids Luzon Strait.',
-    eta: '+9.3h delay',
-    cost: '$16,880',
-    savings: '+$2,008',
-    risk: '14.7%',
-    distance: '3,620 nm',
-    recommended: false,
-  },
-  {
-    id: 'C',
-    label: 'Via Busan New Port (KR)',
-    detail: 'Northern Korean Strait leg, maximum safety but highest cost.',
-    eta: '+16.2h delay',
-    cost: '$19,440',
-    savings: '−$1,552',
-    risk: '6.1%',
-    distance: '4,180 nm',
-    recommended: false,
-  },
-]
+// Static options removed — all reroute data is now driven dynamically by computeDynamicReroutes()
 
 export default function NetworkPage() {
   const [lastUpdated, setLastUpdated] = useState<string>('')
   const [backendStatus, setBackendStatus] = useState<'CONNECTED' | 'DISCONNECTED'>('DISCONNECTED')
   const [activeReroute, setActiveReroute] = useState('A')
 
-  // Dynamic Scenario State
+  // Dynamic Scenario State — originPort & destPort are the EXACT names from user input
   const [scenarioState, setScenarioState] = useState({
-    originPort: 'Singapore Tuas Hub (SG)',
-    originShort: 'Singapore',
-    destPort: 'Port of Yokohama (JP)',
-    destShort: 'Yokohama',
+    originPort: 'Shanghai',
+    destPort: 'Yokohama',
     vessel: 'FF Horizon (984210)',
     baselineEta: 'Aug 22 · 08:14 UTC',
     riskPct: '31.4%',
@@ -81,7 +45,8 @@ export default function NetworkPage() {
       if (inputStr) {
         try {
           const inp = JSON.parse(inputStr)
-          const orig = inp.origin_unlocode || 'Singapore'
+          // Use raw port names exactly as entered — findPortKey() handles fuzzy matching
+          const orig = inp.origin_unlocode || 'Shanghai'
           const dest = inp.destination_unlocode || 'Yokohama'
 
           let riskVal = '31.4%'
@@ -92,22 +57,19 @@ export default function NetworkPage() {
               const res = JSON.parse(resStr)
               const p = res?.predictions?.disruption?.disruption_probability
               if (p) riskVal = `${(p * 100).toFixed(1)}%`
-
               const sav = res?.predictions?.cost?.net_financial_savings_usd?.value
               if (sav) savingsVal = `+$${Math.round(sav).toLocaleString()}`
             } catch {}
           }
 
           setScenarioState({
-            originPort: orig.includes('(') ? orig : `${orig} Terminal`,
-            originShort: orig,
-            destPort: dest.includes('(') ? dest : `Port of ${dest}`,
-            destShort: dest,
+            originPort: orig,    // pass raw name — findPortKey does the fuzzy match
+            destPort: dest,      // pass raw name — findPortKey does the fuzzy match
             vessel: inp.vessel_name || 'FF Horizon (984210)',
             baselineEta: inp.baseline_eta || 'Aug 22 · 08:14 UTC',
             riskPct: riskVal,
             savings: savingsVal,
-            recommendedPort: `Via Reroute (${dest})`
+            recommendedPort: `Via Sea Route (${dest})`
           })
         } catch {}
       }
@@ -134,8 +96,8 @@ export default function NetworkPage() {
 
   // Dynamically compute shortest bathymetric waypoints & reroute options for user's input ports
   const { primaryNm, reroutes } = useMemo(() => {
-    return computeDynamicReroutes(scenarioState.originShort, scenarioState.destShort)
-  }, [scenarioState.originShort, scenarioState.destShort])
+    return computeDynamicReroutes(scenarioState.originPort, scenarioState.destPort)
+  }, [scenarioState.originPort, scenarioState.destPort])
 
   return (
     <div className="min-h-screen bg-[#F9F8F6] text-stone-900 antialiased" style={{ fontFamily: 'Inter, sans-serif' }}>
@@ -147,7 +109,7 @@ export default function NetworkPage() {
         <div className="border-b border-stone-200 pb-4 space-y-0.5">
           <p className="text-[11px] font-semibold text-stone-400 uppercase tracking-widest">Route Intelligence</p>
           <h1 className="text-2xl md:text-3xl font-extrabold text-stone-900 tracking-tight">
-            {scenarioState.originShort} → {scenarioState.destShort} Corridor
+            {scenarioState.originPort} → {scenarioState.destPort} Corridor
           </h1>
           <p className="text-sm text-stone-500">
             Active operational analysis. 3 reroute options calculated by PostGIS A* model. Best route recommended below.
@@ -183,7 +145,7 @@ export default function NetworkPage() {
               <div className="flex items-center gap-2">
                 <Globe2 className="size-4 text-[#D94E28]" />
                 <span className="text-sm font-bold text-stone-900">Live Route Map</span>
-                <span className="text-[11px] font-semibold text-stone-400">{scenarioState.originShort} → {scenarioState.destShort}</span>
+                <span className="text-[11px] font-semibold text-stone-400">{scenarioState.originPort} → {scenarioState.destPort}</span>
               </div>
               <span className="text-[11px] text-stone-400">Updated {lastUpdated}</span>
             </div>
@@ -272,7 +234,7 @@ export default function NetworkPage() {
                 { l: 'Baseline Distance', v: `${primaryNm.toLocaleString()} nm` },
                 { l: 'Average Speed', v: '13.8 kn' },
                 { l: 'Tracked Vessel', v: scenarioState.vessel },
-                { l: 'Carrier', v: 'COSCO / ONE Shipping' },
+                { l: 'Baseline ETA', v: scenarioState.baselineEta },
               ].map(({ l, v }) => (
                 <div key={l} className="flex justify-between">
                   <span className="text-stone-400">{l}</span>

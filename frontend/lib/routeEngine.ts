@@ -509,21 +509,88 @@ export interface DynamicRerouteOption {
 
 export function findPortKey(inputName?: string, fallbackKey: string = 'Shanghai Yangshan Port (CN)'): string {
   if (!inputName) return fallbackKey
+
+  // Explicit alias table — maps disruption form dropdown values to exact PORT_COORDS keys
+  const ALIAS_MAP: Record<string, string> = {
+    'shanghai':   'Shanghai Yangshan Port (CN)',
+    'singapore':  'Singapore Tuas Hub (SG)',
+    'yokohama':   'Port of Yokohama (JP)',
+    'kobe':       'Port of Kobe (JP)',
+    'busan':      'Busan New Port (KR)',
+    'rotterdam':  'Rotterdam World Gateway (NL)',
+    'hamburg':    'Port of Hamburg (DE)',
+    'mumbai':     'Jawaharlal Nehru Port (Mumbai, IN)',
+    'chittagong': 'Port of Chittagong (BD)',
+    'hong kong':  'Port of Hong Kong (HK)',
+    'shenzhen':   'Shenzhen Yantian Port (CN)',
+    'guangzhou':  'Guangzhou Nansha Port (CN)',
+    'ningbo':     'Ningbo-Zhoushan Port (CN)',
+    'qingdao':    'Qingdao Port (CN)',
+    'tianjin':    'Tianjin Xingang Port (CN)',
+    'tokyo':      'Port of Tokyo (JP)',
+    'osaka':      'Port of Osaka (JP)',
+    'nagoya':     'Port of Nagoya (JP)',
+    'incheon':    'Incheon Port (KR)',
+    'kaohsiung':  'Port of Kaohsiung (TW)',
+    'manila':     'Manila International Port (PH)',
+    'jakarta':    'Tanjung Priok Jakarta (ID)',
+    'laem chabang': 'Laem Chabang Port (TH)',
+    'port klang': 'Port Klang (MY)',
+    'colombo':    'Colombo Port (LK)',
+    'chennai':    'Chennai Port (IN)',
+    'mundra':     'Mundra Port (IN)',
+    'kochi':      'Kochi Port (IN)',
+    'karachi':    'Karachi Port (PK)',
+    'jebel ali':  'Jebel Ali Port (AE)',
+    'salalah':    'Port of Salalah (OM)',
+    'djibouti':   'Port of Djibouti (DJ)',
+    'mombasa':    'Port of Mombasa (KE)',
+    'dar es salaam': 'Port of Dar es Salaam (TZ)',
+    'antwerp':    'Port of Antwerp (BE)',
+    'felixstowe': 'Port of Felixstowe (GB)',
+    'le havre':   'Port of Le Havre (FR)',
+    'barcelona':  'Port of Barcelona (ES)',
+    'algeciras':  'Port of Algeciras (ES)',
+    'piraeus':    'Port of Piraeus (GR)',
+    'los angeles': 'Port of Los Angeles (US)',
+    'long beach': 'Port of Long Beach (US)',
+    'new york':   'Port of New York (US)',
+    'savannah':   'Port of Savannah (US)',
+    'vancouver':  'Port of Vancouver (CA)',
+    'santos':     'Port of Santos (BR)',
+    'buenos aires': 'Port of Buenos Aires (AR)',
+  }
+
   const norm = inputName.toLowerCase().trim()
+
+  // 1. Exact alias match
+  if (ALIAS_MAP[norm]) return ALIAS_MAP[norm]
+
+  // 2. Partial alias match (input contains alias key)
+  for (const [alias, key] of Object.entries(ALIAS_MAP)) {
+    if (norm.includes(alias) || alias.includes(norm)) return key
+  }
+
   const keys = Object.keys(PORT_COORDS)
+
+  // 3. Exact substring match in PORT_COORDS keys
   for (const key of keys) {
     const kNorm = key.toLowerCase()
     if (kNorm.includes(norm) || norm.includes(kNorm.split(' ')[0])) {
       return key
     }
   }
+
+  // 4. 3-character prefix match fallback
   for (const key of keys) {
     if (norm.length >= 3 && key.toLowerCase().includes(norm.slice(0, 3))) {
       return key
     }
   }
+
   return fallbackKey
 }
+
 
 /**
  * Checks if two waypoint paths are substantially different (distance diff > 40 nm).
