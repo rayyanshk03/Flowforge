@@ -30,8 +30,7 @@ export default function Navbar() {
 
   const navLinks = [
     { label: 'Overview', href: '/' },
-    { label: 'Intelligence', href: '/disruptions' },
-    { label: 'Routes', href: '/network' },
+    { label: 'Network & Routes', href: '/network' },
     { label: 'Simulation', href: '/simulation' },
     { label: 'Decisions', href: '/decisions' }
   ]
