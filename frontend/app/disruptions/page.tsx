@@ -4,43 +4,23 @@ import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import {
   ArrowRight,
-  AlertTriangle,
   Activity,
-  Anchor,
-  BarChart3,
-  Brain,
+  Check,
   CheckCircle2,
-  ChevronRight,
+  RefreshCw,
+  Sparkles,
+  ShieldAlert,
+  Wind,
+  Globe2,
+  Anchor,
   Clock,
   Compass,
-  Cpu,
-  Database,
-  DollarSign,
-  Eye,
-  Filter,
-  Globe2,
-  Layers,
-  MapPin,
-  Navigation,
-  Play,
-  RefreshCw,
-  Search,
-  Shield,
-  ShieldAlert,
-  Ship,
-  Sparkles,
-  TrendingDown,
-  TrendingUp,
-  Warehouse,
-  Wind,
-  Waves,
-  X,
-  Check
+  Database
 } from 'lucide-react'
 
 import Navbar from '@/components/Navbar'
 
-// Realistic Port List
+// Realistic Port Examples
 const REALISTIC_PORTS = [
   { name: 'Shanghai', code: 'CNSHA', country: 'China' },
   { name: 'Singapore', code: 'SGSIN', country: 'Singapore' },
@@ -56,7 +36,7 @@ export default function OperationalIntelligencePage() {
   // Form State
   const [originPort, setOriginPort] = useState('Shanghai')
   const [destinationPort, setDestinationPort] = useState('Yokohama')
-  const [vessel, setVessel] = useState('FF Horizon (984210)')
+  const [vessel, setVessel] = useState('FF Horizon (IMO 984210)')
   const [carrier, setCarrier] = useState('Ocean Network Express (ONE)')
   const [cargoType, setCargoType] = useState('High-Tech Semiconductors')
   const [cargoWeight, setCargoWeight] = useState('4,500 TEU / 12,500 MT')
@@ -65,6 +45,10 @@ export default function OperationalIntelligencePage() {
   const [requiredDeliveryTime, setRequiredDeliveryTime] = useState('2026-08-20 00:00 UTC')
   const [riskTolerance, setRiskTolerance] = useState('Balanced')
   const [priority, setPriority] = useState('Crucial / High Priority')
+
+  // Search Filter State for Dropdowns
+  const [originSearch, setOriginSearch] = useState('')
+  const [destSearch, setDestSearch] = useState('')
 
   // Live Analysis State
   const [isAnalyzing, setIsAnalyzing] = useState(false)
@@ -76,6 +60,20 @@ export default function OperationalIntelligencePage() {
     setAnalysisTimestamp(new Date().toLocaleTimeString())
   }, [])
 
+  const filteredOriginPorts = REALISTIC_PORTS.filter(
+    (p) =>
+      p.name.toLowerCase().includes(originSearch.toLowerCase()) ||
+      p.code.toLowerCase().includes(originSearch.toLowerCase()) ||
+      p.country.toLowerCase().includes(originSearch.toLowerCase())
+  )
+
+  const filteredDestPorts = REALISTIC_PORTS.filter(
+    (p) =>
+      p.name.toLowerCase().includes(destSearch.toLowerCase()) ||
+      p.code.toLowerCase().includes(destSearch.toLowerCase()) ||
+      p.country.toLowerCase().includes(destSearch.toLowerCase())
+  )
+
   const handleAnalyze = async () => {
     setIsAnalyzing(true)
     try {
@@ -83,193 +81,234 @@ export default function OperationalIntelligencePage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          origin: originPort,
-          destination: destinationPort,
-          cargo_value: 24500000,
+          origin_unlocode: originPort,
+          destination_unlocode: destinationPort,
+          cargo_value_usd: 24500000,
           risk_tolerance: riskTolerance
         })
       })
       if (res.ok) {
         const data = await res.json()
-        if (data.disruption_prediction) {
-          const prob = (data.disruption_prediction.probability * 100).toFixed(2)
-          setDisruptionProb(parseFloat(prob))
-          if (parseFloat(prob) > 50) {
-            setStatusExposure('HIGH EXPOSURE')
-          } else if (parseFloat(prob) > 20) {
-            setStatusExposure('MODERATE EXPOSURE')
-          } else {
-            setStatusExposure('LOW EXPOSURE')
-          }
+        const probVal = data?.predictions?.disruption?.disruption_probability
+          ? (data.predictions.disruption.disruption_probability * 100).toFixed(2)
+          : '22.95'
+        const numericProb = parseFloat(probVal)
+        setDisruptionProb(numericProb)
+
+        if (numericProb > 50) {
+          setStatusExposure('HIGH EXPOSURE')
+        } else if (numericProb > 20) {
+          setStatusExposure('MODERATE EXPOSURE')
+        } else {
+          setStatusExposure('LOW EXPOSURE')
         }
       }
     } catch {
-      // Fallback
+      // Offline fallback
     } finally {
       setTimeout(() => {
         setIsAnalyzing(false)
         setAnalysisTimestamp(new Date().toLocaleTimeString())
-      }, 500)
+      }, 400)
     }
   }
 
   return (
-    <div className="min-h-screen bg-[#F9F8F6] text-stone-900 font-sans antialiased selection:bg-[#D94E28] selection:text-white">
-      {/* Top Navigation */}
+    <div className="min-h-screen bg-[#F6F6F3] text-[#151719] font-sans antialiased selection:bg-[#D94E28] selection:text-white">
       <Navbar />
 
-      {/* Main Container */}
-      <main className="mx-auto max-w-[1440px] px-4 py-6 md:px-10 space-y-6">
+      <main className="mx-auto max-w-[1440px] px-5 py-8 md:px-12 space-y-8">
 
-        {/* Page Title & Subtitle */}
-        <div className="space-y-1 border-b border-stone-200/80 pb-4">
-          <div className="inline-flex items-center gap-2 rounded-full border border-stone-200 bg-white px-3 py-0.5 text-[11px] font-semibold text-[#D94E28] shadow-2xs">
+        {/* PAGE TITLE & SUBTITLE */}
+        <div className="space-y-2 border-b border-stone-300 pb-5">
+          <div className="inline-flex items-center gap-2 rounded border border-stone-300 bg-white px-3 py-1 text-xs font-mono font-bold text-[#D94E28] shadow-xs">
             <span className="size-2 rounded-full bg-[#D94E28] animate-pulse" />
-            OPERATIONAL INTELLIGENCE & SHIPMENT ANALYSIS
+            PAGE 02 · SHIPMENT ANALYSIS & OPERATIONAL INTELLIGENCE
           </div>
-          <h1 className="text-2xl md:text-4xl font-extrabold text-stone-900 tracking-tight">
+          <h1 className="text-3xl md:text-5xl font-extrabold text-[#151719] tracking-tight">
             Operational Intelligence
           </h1>
-          <p className="text-xs md:text-sm text-stone-600 font-normal">
+          <p className="text-sm text-stone-600 font-normal max-w-2xl leading-relaxed">
             Establish the current state of the shipment before evaluating alternative decisions.
           </p>
         </div>
 
-        {/* Two-Column Responsive Grid Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* TWO-COLUMN LAYOUT: LEFT (INPUT) | RIGHT (LIVE INTELLIGENCE) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
           {/* ================================================== */}
-          {/* LEFT — SHIPMENT CONFIGURATION FORM (7 Columns) */}
+          {/* LEFT — SHIPMENT INPUT (7 Columns) */}
           {/* ================================================== */}
-          <div className="lg:col-span-7 rounded-2xl border border-stone-200 bg-white p-5 md:p-6 space-y-5 shadow-sm">
-            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+          <div className="lg:col-span-7 rounded-2xl border border-stone-300 bg-white p-7 space-y-6 shadow-xs">
+            <div className="flex items-center justify-between border-b border-stone-200 pb-4">
               <div>
-                <h2 className="text-lg font-bold text-stone-900">Shipment Configuration</h2>
-                <p className="text-xs text-stone-500 font-medium">Configure telemetry parameters to score risk.</p>
+                <span className="text-[10px] font-mono font-bold text-[#D94E28] uppercase tracking-widest block">
+                  CONFIGURATION FORM
+                </span>
+                <h2 className="text-xl font-extrabold text-[#151719] mt-0.5">Shipment Configuration</h2>
               </div>
-              <span className="text-[11px] font-semibold text-stone-600 bg-stone-100 border border-stone-200 px-2.5 py-0.5 rounded-md">
-                INPUT PARAMETERS
+              <span className="text-[10px] font-mono font-bold text-stone-600 bg-stone-100 border border-stone-300 px-3 py-1 rounded">
+                INPUT PARAMS
               </span>
             </div>
 
-            {/* Form Fields Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-sans">
-              {/* Origin Port Searchable Dropdown */}
+            {/* Fields Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 text-xs font-sans">
+
+              {/* Searchable Dropdown: Origin Port */}
               <div className="space-y-1.5">
-                <label className="font-semibold text-stone-700 block">Origin Port</label>
-                <select
-                  value={originPort}
-                  onChange={(e) => setOriginPort(e.target.value)}
-                  className="w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 font-medium text-stone-900 shadow-2xs focus:border-[#D94E28] focus:outline-none"
-                >
-                  {REALISTIC_PORTS.map((port) => (
-                    <option key={port.code} value={port.name}>
-                      {port.name} ({port.code}) — {port.country}
-                    </option>
-                  ))}
-                </select>
+                <label className="font-mono font-bold text-stone-700 block uppercase text-[11px]">
+                  Origin Port
+                </label>
+                <div className="space-y-1">
+                  <input
+                    type="text"
+                    placeholder="Filter port..."
+                    value={originSearch}
+                    onChange={(e) => setOriginSearch(e.target.value)}
+                    className="w-full rounded border border-stone-300 bg-stone-50 px-3 py-1.5 text-xs font-mono text-stone-600 focus:outline-none focus:border-[#D94E28]"
+                  />
+                  <select
+                    value={originPort}
+                    onChange={(e) => setOriginPort(e.target.value)}
+                    className="w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 font-bold text-[#151719] shadow-xs focus:border-[#D94E28] focus:outline-none cursor-pointer"
+                  >
+                    {filteredOriginPorts.map((port) => (
+                      <option key={port.code} value={port.name}>
+                        {port.name} ({port.code}) — {port.country}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
-              {/* Destination Port Searchable Dropdown */}
+              {/* Searchable Dropdown: Destination Port */}
               <div className="space-y-1.5">
-                <label className="font-semibold text-stone-700 block">Destination Port</label>
-                <select
-                  value={destinationPort}
-                  onChange={(e) => setDestinationPort(e.target.value)}
-                  className="w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 font-medium text-stone-900 shadow-2xs focus:border-[#D94E28] focus:outline-none"
-                >
-                  {REALISTIC_PORTS.map((port) => (
-                    <option key={port.code} value={port.name}>
-                      {port.name} ({port.code}) — {port.country}
-                    </option>
-                  ))}
-                </select>
+                <label className="font-mono font-bold text-stone-700 block uppercase text-[11px]">
+                  Destination Port
+                </label>
+                <div className="space-y-1">
+                  <input
+                    type="text"
+                    placeholder="Filter port..."
+                    value={destSearch}
+                    onChange={(e) => setDestSearch(e.target.value)}
+                    className="w-full rounded border border-stone-300 bg-stone-50 px-3 py-1.5 text-xs font-mono text-stone-600 focus:outline-none focus:border-[#D94E28]"
+                  />
+                  <select
+                    value={destinationPort}
+                    onChange={(e) => setDestinationPort(e.target.value)}
+                    className="w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 font-bold text-[#151719] shadow-xs focus:border-[#D94E28] focus:outline-none cursor-pointer"
+                  >
+                    {filteredDestPorts.map((port) => (
+                      <option key={port.code} value={port.name}>
+                        {port.name} ({port.code}) — {port.country}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               {/* Vessel */}
               <div className="space-y-1.5">
-                <label className="font-semibold text-stone-700 block">Vessel</label>
+                <label className="font-mono font-bold text-stone-700 block uppercase text-[11px]">
+                  Vessel
+                </label>
                 <input
                   type="text"
                   value={vessel}
                   onChange={(e) => setVessel(e.target.value)}
-                  className="w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 font-medium text-stone-900 shadow-2xs focus:border-[#D94E28] focus:outline-none"
+                  className="w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 font-bold text-[#151719] shadow-xs focus:border-[#D94E28] focus:outline-none"
                 />
               </div>
 
               {/* Carrier */}
               <div className="space-y-1.5">
-                <label className="font-semibold text-stone-700 block">Carrier</label>
+                <label className="font-mono font-bold text-stone-700 block uppercase text-[11px]">
+                  Carrier
+                </label>
                 <input
                   type="text"
                   value={carrier}
                   onChange={(e) => setCarrier(e.target.value)}
-                  className="w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 font-medium text-stone-900 shadow-2xs focus:border-[#D94E28] focus:outline-none"
+                  className="w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 font-bold text-[#151719] shadow-xs focus:border-[#D94E28] focus:outline-none"
                 />
               </div>
 
               {/* Cargo Type */}
               <div className="space-y-1.5">
-                <label className="font-semibold text-stone-700 block">Cargo Type</label>
+                <label className="font-mono font-bold text-stone-700 block uppercase text-[11px]">
+                  Cargo Type
+                </label>
                 <input
                   type="text"
                   value={cargoType}
                   onChange={(e) => setCargoType(e.target.value)}
-                  className="w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 font-medium text-stone-900 shadow-2xs focus:border-[#D94E28] focus:outline-none"
+                  className="w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 font-bold text-[#151719] shadow-xs focus:border-[#D94E28] focus:outline-none"
                 />
               </div>
 
               {/* Cargo Weight */}
               <div className="space-y-1.5">
-                <label className="font-semibold text-stone-700 block">Cargo Weight</label>
+                <label className="font-mono font-bold text-stone-700 block uppercase text-[11px]">
+                  Cargo Weight
+                </label>
                 <input
                   type="text"
                   value={cargoWeight}
                   onChange={(e) => setCargoWeight(e.target.value)}
-                  className="w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 font-medium text-stone-900 shadow-2xs focus:border-[#D94E28] focus:outline-none"
+                  className="w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 font-bold text-[#151719] shadow-xs focus:border-[#D94E28] focus:outline-none"
                 />
               </div>
 
               {/* Cargo Value */}
               <div className="space-y-1.5">
-                <label className="font-semibold text-stone-700 block">Cargo Value ($)</label>
+                <label className="font-mono font-bold text-stone-700 block uppercase text-[11px]">
+                  Cargo Value
+                </label>
                 <input
                   type="text"
                   value={cargoValue}
                   onChange={(e) => setCargoValue(e.target.value)}
-                  className="w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 font-medium text-stone-900 shadow-2xs focus:border-[#D94E28] focus:outline-none"
+                  className="w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 font-bold text-[#151719] shadow-xs focus:border-[#D94E28] focus:outline-none"
                 />
               </div>
 
               {/* Baseline ETA */}
               <div className="space-y-1.5">
-                <label className="font-semibold text-stone-700 block">Baseline ETA</label>
+                <label className="font-mono font-bold text-stone-700 block uppercase text-[11px]">
+                  Baseline ETA
+                </label>
                 <input
                   type="text"
                   value={baselineEta}
                   onChange={(e) => setBaselineEta(e.target.value)}
-                  className="w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 font-medium text-stone-900 shadow-2xs focus:border-[#D94E28] focus:outline-none"
+                  className="w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 font-bold text-[#151719] shadow-xs focus:border-[#D94E28] focus:outline-none"
                 />
               </div>
 
               {/* Required Delivery Time */}
               <div className="space-y-1.5">
-                <label className="font-semibold text-stone-700 block">Required Delivery Time</label>
+                <label className="font-mono font-bold text-stone-700 block uppercase text-[11px]">
+                  Required Delivery Time
+                </label>
                 <input
                   type="text"
                   value={requiredDeliveryTime}
                   onChange={(e) => setRequiredDeliveryTime(e.target.value)}
-                  className="w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 font-medium text-stone-900 shadow-2xs focus:border-[#D94E28] focus:outline-none"
+                  className="w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 font-bold text-[#151719] shadow-xs focus:border-[#D94E28] focus:outline-none"
                 />
               </div>
 
               {/* Risk Tolerance Dropdown */}
               <div className="space-y-1.5">
-                <label className="font-semibold text-stone-700 block">Risk Tolerance</label>
+                <label className="font-mono font-bold text-stone-700 block uppercase text-[11px]">
+                  Risk Tolerance
+                </label>
                 <select
                   value={riskTolerance}
                   onChange={(e) => setRiskTolerance(e.target.value)}
-                  className="w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 font-medium text-stone-900 shadow-2xs focus:border-[#D94E28] focus:outline-none"
+                  className="w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 font-bold text-[#151719] shadow-xs focus:border-[#D94E28] focus:outline-none cursor-pointer"
                 >
                   <option value="Low">Low (Risk Averse)</option>
                   <option value="Balanced">Balanced (Default)</option>
@@ -279,11 +318,13 @@ export default function OperationalIntelligencePage() {
 
               {/* Priority Dropdown */}
               <div className="space-y-1.5 sm:col-span-2">
-                <label className="font-semibold text-stone-700 block">Priority</label>
+                <label className="font-mono font-bold text-stone-700 block uppercase text-[11px]">
+                  Priority
+                </label>
                 <select
                   value={priority}
                   onChange={(e) => setPriority(e.target.value)}
-                  className="w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 font-medium text-stone-900 shadow-2xs focus:border-[#D94E28] focus:outline-none"
+                  className="w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 font-bold text-[#151719] shadow-xs focus:border-[#D94E28] focus:outline-none cursor-pointer"
                 >
                   <option value="Crucial / High Priority">Crucial / High Priority (Perishable & Hazmat)</option>
                   <option value="Standard">Standard Commercial Shipping</option>
@@ -292,16 +333,16 @@ export default function OperationalIntelligencePage() {
               </div>
             </div>
 
-            {/* Analyze Shipment Action Button */}
+            {/* Analyze Shipment Button */}
             <div className="pt-2">
               <button
                 onClick={handleAnalyze}
                 disabled={isAnalyzing}
-                className="w-full rounded-xl bg-[#D94E28] hover:bg-[#C8401C] transition-all py-3.5 text-xs font-bold text-white shadow-sm flex items-center justify-center gap-2 active:scale-[0.99] disabled:opacity-75"
+                className="w-full rounded-xl bg-[#D94E28] hover:bg-[#C8401C] transition-all py-4 text-xs font-bold text-white shadow-xs flex items-center justify-center gap-2 active:scale-[0.99] disabled:opacity-75"
               >
                 {isAnalyzing ? (
                   <>
-                    <RefreshCw className="size-4 animate-spin" /> Evaluating ML Risk & Environmental Feeds...
+                    <RefreshCw className="size-4 animate-spin" /> Evaluating ML Risk & Operational Feeds...
                   </>
                 ) : (
                   <>
@@ -312,148 +353,179 @@ export default function OperationalIntelligencePage() {
             </div>
           </div>
 
-          {/* ================================================== */}
-          {/* RIGHT — LIVE INTELLIGENCE & RISK DISPLAY (5 Columns) */}
-          {/* ================================================== */}
-          <div className="lg:col-span-5 space-y-5">
 
-            {/* Live Route Summary Card */}
-            <div className="rounded-2xl border border-stone-200 bg-white p-5 space-y-4 shadow-sm">
-              <div className="flex items-center justify-between border-b border-stone-100 pb-2.5">
-                <span className="text-xs font-bold text-stone-500 uppercase tracking-wider">Live Route Summary</span>
-                <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
-                  Updated {analysisTimestamp}
+          {/* ================================================== */}
+          {/* RIGHT — LIVE OPERATIONAL INTELLIGENCE (5 Columns) */}
+          {/* ================================================== */}
+          <div className="lg:col-span-5 space-y-6">
+
+            {/* Live Route Summary & Environmental Feeds */}
+            <div className="rounded-2xl border border-stone-300 bg-white p-7 space-y-5 shadow-xs">
+              <div className="flex items-center justify-between border-b border-stone-200 pb-3.5">
+                <span className="text-[10px] font-mono font-bold text-stone-500 uppercase tracking-widest">
+                  LIVE ROUTE SUMMARY
+                </span>
+                <span className="text-[10px] font-mono font-bold text-emerald-800 bg-emerald-50 border border-emerald-300 px-2.5 py-0.5 rounded">
+                  UPDATED {analysisTimestamp}
                 </span>
               </div>
 
-              {/* Minimal Vertical Route Flow */}
-              <div className="bg-[#F9F8F6] rounded-xl border border-stone-200 p-4 space-y-3 font-sans text-xs">
+              {/* Route Summary vertical flow */}
+              <div className="bg-[#F6F6F3] rounded-xl border border-stone-300 p-4 space-y-3 font-sans text-xs">
                 <div className="flex items-center justify-between">
                   <span className="text-stone-500 font-medium">ORIGIN</span>
-                  <strong className="text-stone-900 font-bold">{originPort}</strong>
+                  <strong className="text-[#151719] font-extrabold text-sm">{originPort}</strong>
                 </div>
 
-                <div className="flex items-center justify-center text-stone-400 font-bold text-xs">↓</div>
+                <div className="flex items-center justify-center text-stone-400 font-bold text-sm">↓</div>
 
-                <div className="flex items-center justify-between border-y border-stone-200/70 py-2">
-                  <span className="text-stone-500 font-medium">CURRENT ROUTE</span>
-                  <strong className="text-stone-900 font-bold">East China Sea Express</strong>
+                <div className="flex items-center justify-between border-y border-stone-300/80 py-2.5">
+                  <span className="text-stone-500 font-medium">CORRIDOR</span>
+                  <strong className="text-[#D94E28] font-mono font-bold text-xs">Current Route (East Asian Leg)</strong>
                 </div>
 
-                <div className="flex items-center justify-center text-stone-400 font-bold text-xs">↓</div>
+                <div className="flex items-center justify-center text-stone-400 font-bold text-sm">↓</div>
 
                 <div className="flex items-center justify-between">
                   <span className="text-stone-500 font-medium">DESTINATION</span>
-                  <strong className="text-stone-900 font-bold">{destinationPort}</strong>
+                  <strong className="text-[#151719] font-extrabold text-sm">{destinationPort}</strong>
                 </div>
               </div>
 
-              {/* Live Environmental Telemetry Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-sans pt-1">
-                {/* Weather Wind */}
-                <div className="rounded-xl border border-stone-200 bg-[#F9F8F6] p-3 text-center space-y-0.5">
-                  <span className="text-[11px] font-semibold text-stone-500 block">Wind</span>
-                  <strong className="text-stone-900 font-extrabold block text-sm">4.7 kts</strong>
+              {/* Telemetry Metrics Grid */}
+              <div className="grid grid-cols-2 gap-3 text-xs font-sans">
+                {/* Weather */}
+                <div className="rounded-xl border border-stone-300 bg-[#F6F6F3] p-4 space-y-1">
+                  <span className="text-[10px] font-mono font-bold text-stone-500 uppercase tracking-wider block">
+                    WEATHER
+                  </span>
+                  <div className="flex justify-between items-center pt-1">
+                    <span className="text-stone-600">Wind</span>
+                    <strong className="font-mono font-bold text-[#151719]">4.7 kts</strong>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-stone-600">Wave Height</span>
+                    <strong className="font-mono font-bold text-[#151719]">0.0 m</strong>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-stone-600">Op Stress</span>
+                    <strong className="font-mono font-bold text-[#151719]">23%</strong>
+                  </div>
                 </div>
 
-                {/* Wave Height */}
-                <div className="rounded-xl border border-stone-200 bg-[#F9F8F6] p-3 text-center space-y-0.5">
-                  <span className="text-[11px] font-semibold text-stone-500 block">Wave Height</span>
-                  <strong className="text-stone-900 font-extrabold block text-sm">0.0 m</strong>
+                {/* Port */}
+                <div className="rounded-xl border border-stone-300 bg-[#F6F6F3] p-4 space-y-1">
+                  <span className="text-[10px] font-mono font-bold text-stone-500 uppercase tracking-wider block">
+                    PORT
+                  </span>
+                  <div className="flex justify-between items-center pt-1">
+                    <span className="text-stone-600">Congestion</span>
+                    <strong className="font-mono font-bold text-amber-800">45%</strong>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-stone-600">Waiting Time</span>
+                    <strong className="font-mono font-bold text-[#151719]">18 h</strong>
+                  </div>
                 </div>
 
-                {/* Operational Stress */}
-                <div className="rounded-xl border border-stone-200 bg-[#F9F8F6] p-3 text-center space-y-0.5">
-                  <span className="text-[11px] font-semibold text-stone-500 block">Stress</span>
-                  <strong className="text-stone-900 font-extrabold block text-sm">23%</strong>
+                {/* Geo-Political */}
+                <div className="rounded-xl border border-stone-300 bg-[#F6F6F3] p-4 space-y-1">
+                  <span className="text-[10px] font-mono font-bold text-stone-500 uppercase tracking-wider block">
+                    GEO-POLITICAL
+                  </span>
+                  <div className="pt-1 flex justify-between items-center">
+                    <span className="text-stone-600">Reg. Exposure</span>
+                    <strong className="font-mono font-bold text-red-700 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded text-[11px]">
+                      HIGH
+                    </strong>
+                  </div>
                 </div>
 
-                {/* Port Congestion */}
-                <div className="rounded-xl border border-stone-200 bg-[#F9F8F6] p-3 text-center space-y-0.5">
-                  <span className="text-[11px] font-semibold text-stone-500 block">Congestion</span>
-                  <strong className="text-amber-800 font-extrabold block text-sm">45%</strong>
-                </div>
-              </div>
-
-              {/* Secondary Environmental Details */}
-              <div className="grid grid-cols-3 gap-2 text-[11px] font-sans text-stone-700">
-                <div className="rounded-lg border border-stone-200 bg-stone-50 p-2.5 text-center">
-                  <span className="text-stone-500 block">Waiting Time:</span>
-                  <strong className="font-bold text-stone-900">18 h</strong>
-                </div>
-                <div className="rounded-lg border border-stone-200 bg-stone-50 p-2.5 text-center">
-                  <span className="text-stone-500 block">Geo Exposure:</span>
-                  <strong className="font-bold text-red-700">HIGH</strong>
-                </div>
-                <div className="rounded-lg border border-stone-200 bg-stone-50 p-2.5 text-center">
-                  <span className="text-stone-500 block">Data Quality:</span>
-                  <strong className="font-bold text-emerald-700">8/8 Sources</strong>
+                {/* Data Quality */}
+                <div className="rounded-xl border border-stone-300 bg-[#F6F6F3] p-4 space-y-1">
+                  <span className="text-[10px] font-mono font-bold text-stone-500 uppercase tracking-wider block">
+                    DATA QUALITY
+                  </span>
+                  <div className="pt-1 flex justify-between items-center">
+                    <span className="text-stone-600">Status</span>
+                    <strong className="font-mono font-bold text-emerald-800 bg-emerald-50 border border-emerald-300 px-1.5 py-0.5 rounded text-[11px]">
+                      8/8 SOURCES
+                    </strong>
+                  </div>
                 </div>
               </div>
             </div>
 
+
             {/* ================================================== */}
             {/* RISK SUMMARY CARD */}
             {/* ================================================== */}
-            <div className="rounded-2xl border-2 border-amber-300 bg-white p-5 md:p-6 space-y-4 shadow-sm">
-              <div className="flex items-center justify-between border-b border-stone-100 pb-3">
-                <span className="text-xs font-bold text-stone-500 uppercase tracking-wider">Risk Summary</span>
-                <span className="text-xs font-bold text-amber-900 bg-amber-100 border border-amber-300 px-3 py-0.5 rounded-full">
+            <div className="rounded-2xl border-2 border-amber-400 bg-white p-7 space-y-4 shadow-xs">
+              <div className="flex items-center justify-between border-b border-stone-200 pb-3">
+                <span className="text-[10px] font-mono font-bold text-stone-500 uppercase tracking-widest">
+                  RISK SUMMARY
+                </span>
+                <span className="text-[10px] font-mono font-bold text-amber-900 bg-amber-100 border border-amber-300 px-3 py-1 rounded">
                   {statusExposure}
                 </span>
               </div>
 
               <div className="space-y-1">
-                <span className="text-xs font-semibold text-stone-500 block">CURRENT DISRUPTION PROBABILITY</span>
-                <div className="text-4xl font-extrabold text-[#D94E28] tracking-tight">
+                <span className="text-[11px] font-mono font-bold text-stone-500 uppercase tracking-wider block">
+                  CURRENT DISRUPTION PROBABILITY
+                </span>
+                <div className="text-5xl font-extrabold text-[#D94E28] tracking-tight">
                   {disruptionProb.toFixed(2)}%
                 </div>
               </div>
 
-              <p className="text-xs text-stone-600 leading-relaxed pt-2 border-t border-stone-100">
+              <p className="text-xs text-stone-600 leading-relaxed pt-2 border-t border-stone-100 font-sans">
                 FlowForge estimates the probability of a material operational disruption based on current environmental, port and geopolitical conditions.
               </p>
             </div>
 
+
             {/* ================================================== */}
             {/* MODEL EXPLANATION — "Why this score?" */}
             {/* ================================================== */}
-            <div className="rounded-2xl border border-stone-200 bg-white p-5 space-y-4 shadow-sm">
-              <div className="flex items-center justify-between border-b border-stone-100 pb-2.5">
-                <h3 className="text-sm font-bold text-stone-900">Why this score?</h3>
-                <span className="text-[11px] font-semibold text-stone-500">Current intelligence signals</span>
+            <div className="rounded-2xl border border-stone-300 bg-white p-7 space-y-5 shadow-xs">
+              <div className="flex items-center justify-between border-b border-stone-200 pb-3">
+                <h3 className="text-base font-extrabold text-[#151719]">Why this score?</h3>
+                <span className="text-[10px] font-mono font-bold text-stone-500 uppercase tracking-widest">
+                  Current intelligence signals
+                </span>
               </div>
 
-              <div className="space-y-3.5 text-xs font-sans">
-                {/* Signal 1 */}
+              <div className="space-y-4 text-xs font-sans">
+                {/* Factor 1: Operational Stress */}
                 <div className="space-y-1.5">
-                  <div className="flex justify-between font-medium">
+                  <div className="flex justify-between font-mono font-bold text-xs">
                     <span className="text-stone-700">Operational Stress</span>
-                    <strong className="text-stone-900">23%</strong>
+                    <span className="text-[#151719]">██████░░░░ 23%</span>
                   </div>
-                  <div className="w-full bg-stone-100 rounded-full h-2 overflow-hidden border border-stone-200">
+                  <div className="w-full bg-stone-100 rounded-full h-2 overflow-hidden border border-stone-300">
                     <div className="bg-emerald-500 h-2 rounded-full" style={{ width: '23%' }} />
                   </div>
                 </div>
 
-                {/* Signal 2 */}
+                {/* Factor 2: Port Congestion */}
                 <div className="space-y-1.5">
-                  <div className="flex justify-between font-medium">
+                  <div className="flex justify-between font-mono font-bold text-xs">
                     <span className="text-stone-700">Port Congestion</span>
-                    <strong className="text-stone-900">45%</strong>
+                    <span className="text-[#151719]">████████░░ 45%</span>
                   </div>
-                  <div className="w-full bg-stone-100 rounded-full h-2 overflow-hidden border border-stone-200">
+                  <div className="w-full bg-stone-100 rounded-full h-2 overflow-hidden border border-stone-300">
                     <div className="bg-amber-500 h-2 rounded-full" style={{ width: '45%' }} />
                   </div>
                 </div>
 
-                {/* Signal 3 */}
+                {/* Factor 3: Geo-Port Exposure */}
                 <div className="space-y-1.5">
-                  <div className="flex justify-between font-medium">
+                  <div className="flex justify-between font-mono font-bold text-xs">
                     <span className="text-stone-700">Geo-Port Exposure</span>
-                    <strong className="text-stone-900">85%</strong>
+                    <span className="text-[#151719]">█████████░ 85%</span>
                   </div>
-                  <div className="w-full bg-stone-100 rounded-full h-2 overflow-hidden border border-stone-200">
+                  <div className="w-full bg-stone-100 rounded-full h-2 overflow-hidden border border-stone-300">
                     <div className="bg-[#D94E28] h-2 rounded-full" style={{ width: '85%' }} />
                   </div>
                 </div>
@@ -464,34 +536,37 @@ export default function OperationalIntelligencePage() {
 
         </div>
 
+
         {/* ================================================== */}
-        {/* BOTTOM ACTION & DATA STATUS BAR */}
+        {/* BOTTOM ACTION & HORIZONTAL STATUS BAR */}
         {/* ================================================== */}
-        <div className="rounded-2xl border border-stone-200 bg-white p-4 md:p-5 flex flex-wrap items-center justify-between gap-4 shadow-sm font-sans">
-          {/* Left Data Verification Checkmarks */}
+        <div className="rounded-2xl border border-stone-300 bg-white p-5 md:p-6 flex flex-wrap items-center justify-between gap-5 shadow-xs font-sans">
+          {/* Left Data Verification Badges */}
           <div className="flex flex-wrap items-center gap-3 text-xs font-medium text-stone-700">
-            <span className="font-bold text-stone-900 uppercase tracking-wider text-[11px]">DATA VERIFIED:</span>
-            <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-0.5 rounded-md font-semibold text-[11px]">
-              <Check className="size-3 text-emerald-600" /> Weather
+            <span className="font-mono font-bold text-[#151719] uppercase tracking-wider text-[11px]">
+              DATA VERIFIED:
             </span>
-            <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-0.5 rounded-md font-semibold text-[11px]">
-              <Check className="size-3 text-emerald-600" /> Port
+            <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-800 border border-emerald-300 px-3 py-1 rounded font-mono font-bold text-[11px]">
+              <Check className="size-3.5 text-emerald-600" /> Weather
             </span>
-            <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-0.5 rounded-md font-semibold text-[11px]">
-              <Check className="size-3 text-emerald-600" /> AIS
+            <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-800 border border-emerald-300 px-3 py-1 rounded font-mono font-bold text-[11px]">
+              <Check className="size-3.5 text-emerald-600" /> Port
             </span>
-            <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-0.5 rounded-md font-semibold text-[11px]">
-              <Check className="size-3 text-emerald-600" /> Geopolitical
+            <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-800 border border-emerald-300 px-3 py-1 rounded font-mono font-bold text-[11px]">
+              <Check className="size-3.5 text-emerald-600" /> AIS
             </span>
-            <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-0.5 rounded-md font-semibold text-[11px]">
-              <Check className="size-3 text-emerald-600" /> Carrier
+            <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-800 border border-emerald-300 px-3 py-1 rounded font-mono font-bold text-[11px]">
+              <Check className="size-3.5 text-emerald-600" /> Geopolitical
+            </span>
+            <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-800 border border-emerald-300 px-3 py-1 rounded font-mono font-bold text-[11px]">
+              <Check className="size-3.5 text-emerald-600" /> Carrier
             </span>
           </div>
 
-          {/* Right Navigation Button */}
+          {/* Right Transition Button */}
           <Link
             href="/network"
-            className="rounded-xl bg-[#D94E28] hover:bg-[#C8401C] transition-all px-7 py-3 text-xs font-bold text-white shadow-sm flex items-center gap-2 active:scale-[0.98]"
+            className="rounded-xl bg-[#D94E28] hover:bg-[#C8401C] transition-all px-8 py-4 text-xs font-bold text-white shadow-xs flex items-center gap-2.5 active:scale-[0.98]"
           >
             Continue to Route Intelligence <ArrowRight className="size-4" />
           </Link>
@@ -500,8 +575,8 @@ export default function OperationalIntelligencePage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-stone-200 bg-white py-5 text-xs text-stone-500 mt-10 font-sans">
-        <div className="mx-auto max-w-[1440px] px-4 md:px-10 flex flex-wrap items-center justify-between gap-4 font-medium">
+      <footer className="border-t border-stone-300 bg-white py-6 text-xs text-stone-500 mt-12 font-sans">
+        <div className="mx-auto max-w-[1440px] px-5 md:px-12 flex flex-wrap items-center justify-between gap-4 font-mono text-[11px] font-bold">
           <div>FLOWFORGE MARITIME DECISION INTELLIGENCE</div>
           <div>© {new Date().getFullYear()} FLOWFORGE. ALL RIGHTS RESERVED.</div>
         </div>

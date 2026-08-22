@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Sparkles, History, Activity, Database } from 'lucide-react'
+import { Sparkles, Database } from 'lucide-react'
 
 import DecisionHistoryDrawer from '@/components/DecisionHistoryDrawer'
 import SystemSettingsModal from '@/components/SystemSettingsModal'
@@ -30,29 +30,30 @@ export default function Navbar() {
 
   const navLinks = [
     { label: 'Overview', href: '/' },
+    { label: 'Operational Intelligence', href: '/disruptions' },
     { label: 'Network & Routes', href: '/network' },
     { label: 'Simulation', href: '/simulation' },
     { label: 'Decisions', href: '/decisions' }
   ]
 
   return (
-    <header className="sticky top-0 z-50 border-b border-stone-200/80 bg-[#F9F8F6]/95 backdrop-blur-sm font-sans">
+    <header className="sticky top-0 z-50 border-b border-stone-300 bg-[#F6F6F3]/95 backdrop-blur-md font-sans">
       <div className="mx-auto flex h-16 max-w-[1440px] items-center justify-between px-5 md:px-12">
         {/* Logo & Subtitle */}
         <Link href="/" className="flex items-center gap-3 shrink-0">
-          <span className="flex size-7 items-center justify-center rounded-lg bg-[#D94E28] text-white text-xs font-bold shadow-sm">
-            FF
+          <span className="flex size-7 items-center justify-center rounded bg-[#D94E28] text-white font-mono text-xs font-black shadow-xs">
+            F
           </span>
           <div>
-            <span className="text-base font-extrabold tracking-tight text-stone-900 block leading-tight">FLOWFORGE</span>
-            <span className="text-[10px] tracking-wider text-stone-500 font-semibold block uppercase">
+            <span className="text-base font-black tracking-tight text-[#151719] block leading-tight">FLOWFORGE</span>
+            <span className="text-[9px] font-mono tracking-widest text-stone-500 font-bold block">
               MARITIME DECISION INTELLIGENCE
             </span>
           </div>
         </Link>
 
         {/* Navigation Links */}
-        <nav className="flex items-center gap-7 text-xs font-semibold text-stone-600">
+        <nav className="hidden items-center gap-6 text-xs font-mono font-bold tracking-wider text-stone-600 md:flex">
           {navLinks.map((link) => {
             const isActive = pathname === link.href
             return (
@@ -61,8 +62,8 @@ export default function Navbar() {
                 href={link.href}
                 className={`transition-colors py-1 ${
                   isActive
-                    ? 'text-[#D94E28] font-bold border-b-2 border-[#D94E28]'
-                    : 'hover:text-stone-900'
+                    ? 'text-[#D94E28] border-b-2 border-[#D94E28]'
+                    : 'hover:text-[#151719]'
                 }`}
               >
                 {link.label}
@@ -72,22 +73,17 @@ export default function Navbar() {
         </nav>
 
         {/* Right Status & Indicators */}
-        <div className="flex items-center gap-3 text-xs font-semibold shrink-0">
+        <div className="flex items-center gap-3 text-xs font-sans shrink-0">
           <div className="hidden lg:flex items-center gap-2">
-            <span className="flex items-center gap-1.5 rounded-lg bg-stone-100 px-3 py-1 text-stone-700 border border-stone-200 text-[11px] font-medium">
+            <span className="flex items-center gap-1.5 rounded border border-stone-300 bg-white px-3 py-1 text-stone-700 text-[11px] font-mono font-bold">
               <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
-              System Status: <strong className="text-stone-900 font-bold uppercase">{backendStatus}</strong>
-            </span>
-
-            <span className="flex items-center gap-1.5 rounded-lg bg-stone-100 px-3 py-1 text-stone-700 border border-stone-200 text-[11px] font-medium">
-              <Database className="size-3.5 text-[#D94E28]" />
-              Data Sources: <strong className="text-emerald-700 font-bold">8/8 ONLINE</strong>
+              STATUS: <strong className="text-[#151719] uppercase">{backendStatus}</strong>
             </span>
           </div>
 
           <button
             onClick={() => setCreateScenarioOpen(true)}
-            className="rounded-xl bg-[#D94E28] px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-[#C8401C] transition-all flex items-center gap-2"
+            className="rounded-xl bg-[#D94E28] px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-[#C8401C] transition-all flex items-center gap-2"
           >
             <Sparkles className="size-3.5" /> + New Analysis
           </button>
