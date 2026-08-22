@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { ArrowRight, CheckCircle2, Globe2 } from 'lucide-react'
 import dynamic from 'next/dynamic'
