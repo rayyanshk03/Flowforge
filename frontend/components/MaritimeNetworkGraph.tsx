@@ -1,17 +1,21 @@
 'use client'
 
-import React, { useState, useMemo, useEffect } from 'react'
+import React, { useState, useMemo, useEffect, useRef } from 'react'
 import {
   Zap,
   Cpu,
   CheckCircle2,
   Play,
+  Pause,
+  RotateCcw,
+  SkipForward,
   Sparkles,
   BarChart3,
   Clock,
   DollarSign,
   ShieldCheck,
-  Flame
+  Flame,
+  Activity
 } from 'lucide-react'
 
 // Maritime Graph Node Network
@@ -181,23 +185,68 @@ export default function MaritimeNetworkGraph({
   const [riskWeight, setRiskWeight] = useState(20)
   const [fuelWeight, setFuelWeight] = useState(10)
 
-  const [isExecuting, setIsExecuting] = useState(false)
-  const [executionStats, setExecutionStats] = useState({
-    evalTimeMs: '1.42 ms',
-    nodesVisited: 8,
-    paretoCandidates: 32,
-    generations: 50
-  })
-
-  // Compute Active Path dynamically using real graph search
-  const activePath = useMemo(() => {
+  // Compute Active Full Path dynamically using real graph search
+  const fullPath = useMemo(() => {
     return findGraphPath(startNode, targetNode)
   }, [startNode, targetNode, algorithm, riskWeight])
 
+  // STEP-BY-STEP ANIMATION ENGINE STATE
+  const [currentStepIndex, setCurrentStepIndex] = useState(fullPath.length - 1)
+  const [isStepping, setIsStepping] = useState(false)
+  const [stepSpeedMs, setStepSpeedMs] = useState(600)
+  const stepTimerRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Reset currentStepIndex when fullPath or start/target change
+  useEffect(() => {
+    setCurrentStepIndex(fullPath.length - 1)
+    setIsStepping(false)
+  }, [fullPath])
+
+  // Step-by-Step Traversal Loop
+  useEffect(() => {
+    if (isStepping) {
+      stepTimerRef.current = setInterval(() => {
+        setCurrentStepIndex((prev) => {
+          if (prev >= fullPath.length - 1) {
+            setIsStepping(false)
+            if (stepTimerRef.current) clearInterval(stepTimerRef.current)
+            return fullPath.length - 1
+          }
+          return prev + 1
+        })
+      }, stepSpeedMs)
+    } else {
+      if (stepTimerRef.current) clearInterval(stepTimerRef.current)
+    }
+    return () => {
+      if (stepTimerRef.current) clearInterval(stepTimerRef.current)
+    }
+  }, [isStepping, fullPath, stepSpeedMs])
+
+  const handleStartStepByStep = () => {
+    setCurrentStepIndex(0)
+    setIsStepping(true)
+  }
+
+  const handleNextStep = () => {
+    setIsStepping(false)
+    setCurrentStepIndex((prev) => Math.min(fullPath.length - 1, prev + 1))
+  }
+
+  const handleResetStep = () => {
+    setIsStepping(false)
+    setCurrentStepIndex(0)
+  }
+
+  // Active visible path up to currentStepIndex
+  const visiblePath = useMemo(() => {
+    return fullPath.slice(0, currentStepIndex + 1)
+  }, [fullPath, currentStepIndex])
+
   // Calculate Metrics dynamically based on computed path
   const pathMetrics = useMemo(() => {
-    return calculatePathMetrics(activePath)
-  }, [activePath])
+    return calculatePathMetrics(fullPath)
+  }, [fullPath])
 
   // Dynamically compute Pareto Frontier Solutions table from real path metrics
   const paretoSolutions = useMemo(() => {
@@ -234,38 +283,49 @@ export default function MaritimeNetworkGraph({
     ]
   }, [pathMetrics])
 
-  // Update execution stats dynamically when algorithm mode, startNode, or targetNode change
+  const [executionStats, setExecutionStats] = useState({
+    evalTimeMs: '1.42 ms',
+    nodesVisited: 8,
+    paretoCandidates: 32,
+    generations: 50
+  })
+
+  // Update execution stats dynamically when algorithm mode or fullPath change
   useEffect(() => {
     setExecutionStats({
       evalTimeMs: algorithm === 'ASTAR' ? '0.38 ms' : algorithm === 'DIJKSTRA' ? '0.84 ms' : '2.14 ms',
-      nodesVisited: algorithm === 'ASTAR' ? Math.max(3, activePath.length + 1) : Math.max(4, activePath.length + 3),
+      nodesVisited: algorithm === 'ASTAR' ? Math.max(3, fullPath.length + 1) : Math.max(4, fullPath.length + 3),
       paretoCandidates: algorithm === 'NSGA2' ? 48 : 1,
       generations: algorithm === 'NSGA2' ? 50 : 0
     })
-  }, [algorithm, activePath])
+  }, [algorithm, fullPath])
 
-  const handleRunAlgorithm = () => {
-    setIsExecuting(true)
-    setTimeout(() => {
-      setIsExecuting(false)
-      setExecutionStats({
-        evalTimeMs: algorithm === 'ASTAR' ? '0.38 ms' : algorithm === 'DIJKSTRA' ? '0.84 ms' : '2.14 ms',
-        nodesVisited: algorithm === 'ASTAR' ? Math.max(3, activePath.length + 1) : Math.max(4, activePath.length + 3),
-        paretoCandidates: algorithm === 'NSGA2' ? 48 : 1,
-        generations: algorithm === 'NSGA2' ? 50 : 0
-      })
-    }, 350)
-  }
-
-  // Check if edge is part of active path
-  const isEdgeInPath = (u: string, v: string) => {
-    for (let i = 0; i < activePath.length - 1; i++) {
-      if ((activePath[i] === u && activePath[i + 1] === v) || (activePath[i] === v && activePath[i + 1] === u)) {
+  // Check if edge is part of visible traversed path
+  const isEdgeInVisiblePath = (u: string, v: string) => {
+    for (let i = 0; i < visiblePath.length - 1; i++) {
+      if ((visiblePath[i] === u && visiblePath[i + 1] === v) || (visiblePath[i] === v && visiblePath[i + 1] === u)) {
         return true
       }
     }
     return false
   }
+
+  // Active step description text
+  const currentStepDescription = useMemo(() => {
+    if (visiblePath.length === 0) return 'Ready to run graph traversal.'
+    const currentNodeId = visiblePath[visiblePath.length - 1]
+    const currentNodeObj = GRAPH_NODES.find((n) => n.id === currentNodeId)
+    const nodeName = currentNodeObj ? `${currentNodeObj.name} (${currentNodeObj.country})` : currentNodeId
+
+    if (currentStepIndex === 0) {
+      return `STEP 1/${fullPath.length}: Initializing ${algorithm} from Origin Node ${nodeName}...`
+    }
+    if (currentStepIndex === fullPath.length - 1) {
+      return `STEP ${currentStepIndex + 1}/${fullPath.length}: Target Node ${nodeName} Reached! Optimal Path Completed.`
+    }
+    const prevNodeId = visiblePath[visiblePath.length - 2]
+    return `STEP ${currentStepIndex + 1}/${fullPath.length}: Traversing Edge ${prevNodeId} ➔ ${nodeName}...`
+  }, [visiblePath, currentStepIndex, fullPath, algorithm])
 
   return (
     <div className="rounded-lg border-2 border-stone-300 bg-white p-6 shadow-md space-y-6 font-mono">
@@ -306,11 +366,11 @@ export default function MaritimeNetworkGraph({
       {/* Workspace Grid: Graph Visualizer (Left) + Algorithm Controls & Pareto Frontier (Right) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-        {/* LEFT: SVG Graph Visualizer (7 Columns) */}
+        {/* LEFT: SVG Graph Visualizer & STEP-BY-STEP ANIMATION PANEL (7 Columns) */}
         <div className="lg:col-span-7 rounded-xl border-2 border-stone-300 bg-[#F6F6F3] p-4 relative space-y-3 shadow-inner">
           <div className="flex items-center justify-between border-b border-stone-300 pb-2">
             <span className="text-[10px] font-black text-stone-600 uppercase tracking-widest flex items-center gap-1.5">
-              <Cpu className="size-3.5 text-[#D94E28]" /> LIVE NETWORK TOPOLOGY GRAPH
+              <Cpu className="size-3.5 text-[#D94E28]" /> LIVE STEP-BY-STEP NETWORK TRAVERSAL GRAPH
             </span>
             <span className="text-[10px] font-black text-[#047857] bg-emerald-50 border border-emerald-300 px-2 py-0.5 rounded">
               NODES: {GRAPH_NODES.length} | EDGES: {GRAPH_EDGES.length}
@@ -325,7 +385,7 @@ export default function MaritimeNetworkGraph({
                 const u = GRAPH_NODES.find((n) => n.id === edge.from)
                 const v = GRAPH_NODES.find((n) => n.id === edge.to)
                 if (!u || !v) return null
-                const inPath = isEdgeInPath(edge.from, edge.to)
+                const inPath = isEdgeInVisiblePath(edge.from, edge.to)
 
                 return (
                   <g key={i}>
@@ -334,7 +394,7 @@ export default function MaritimeNetworkGraph({
                       y1={u.y}
                       x2={v.x}
                       y2={v.y}
-                      stroke={inPath ? '#D94E28' : '#CBD5E1'}
+                      stroke={inPath ? '#D94E28' : '#E2E8F0'}
                       strokeWidth={inPath ? 3.5 : 1.5}
                       strokeDasharray={inPath ? undefined : '4, 4'}
                     />
@@ -349,17 +409,36 @@ export default function MaritimeNetworkGraph({
               {GRAPH_NODES.map((node) => {
                 const isStart = node.id === startNode
                 const isTarget = node.id === targetNode
-                const inPath = activePath.includes(node.id)
+                const inVisiblePath = visiblePath.includes(node.id)
+                const isCurrentActiveStep = visiblePath[visiblePath.length - 1] === node.id
 
-                const fill = isStart ? '#151719' : isTarget ? '#047857' : inPath ? '#D94E28' : '#64748B'
+                const fill = isStart
+                  ? '#151719'
+                  : isTarget
+                  ? '#047857'
+                  : inVisiblePath
+                  ? '#D94E28'
+                  : '#94A3B8'
 
                 return (
                   <g key={node.id} className="cursor-pointer">
+                    {/* Active evaluation pulsing halo */}
+                    {isCurrentActiveStep && (
+                      <circle
+                        cx={node.x}
+                        cy={node.y}
+                        r={15}
+                        fill="#D94E28"
+                        opacity={0.35}
+                        className="animate-ping"
+                      />
+                    )}
+
                     {/* Node circle */}
                     <circle
                       cx={node.x}
                       cy={node.y}
-                      r={isStart || isTarget ? 9 : 6.5}
+                      r={isStart || isTarget ? 9 : isCurrentActiveStep ? 8 : 6.5}
                       fill={fill}
                       stroke="#FFFFFF"
                       strokeWidth={2}
@@ -385,32 +464,77 @@ export default function MaritimeNetworkGraph({
                 <strong className="text-[#D94E28] font-black">{algorithm}</strong>
               </div>
               <div className="flex justify-between gap-3">
-                <span className="text-stone-500 font-bold">EVALUATION TIME:</span>
+                <span className="text-stone-500 font-bold">EVAL TIME:</span>
                 <strong className="text-stone-900 font-black">{executionStats.evalTimeMs}</strong>
               </div>
               <div className="flex justify-between gap-3">
-                <span className="text-stone-500 font-bold">NODES VISITED:</span>
-                <strong className="text-stone-900 font-black">{executionStats.nodesVisited}</strong>
+                <span className="text-stone-500 font-bold">STEP PROGRESS:</span>
+                <strong className="text-emerald-700 font-black">
+                  {currentStepIndex + 1} / {fullPath.length}
+                </strong>
               </div>
             </div>
           </div>
 
-          {/* Path Steps Output */}
-          <div className="bg-white rounded-lg border border-stone-300 p-3 space-y-1 text-xs">
-            <span className="text-[10px] font-black text-stone-500 uppercase tracking-widest block">
-              COMPUTED GRAPH PATH ({activePath.length} NODES):
-            </span>
-            <div className="flex items-center gap-1.5 flex-wrap font-black text-[#151719]">
-              {activePath.map((step, idx) => (
-                <React.Fragment key={step}>
-                  <span className={`px-2.5 py-1 rounded text-[11px] ${
-                    idx === 0 ? 'bg-stone-900 text-white' : idx === activePath.length - 1 ? 'bg-[#047857] text-white' : 'bg-[#F4F2EC] border border-stone-300 text-stone-800'
-                  }`}>
-                    {step}
-                  </span>
-                  {idx < activePath.length - 1 && <span className="text-[#D94E28] font-bold">➔</span>}
-                </React.Fragment>
-              ))}
+          {/* STEP-BY-STEP LIVE TRAVERSAL FEED & CONTROL TOOLBAR */}
+          <div className="bg-white rounded-lg border-2 border-stone-300 p-3.5 space-y-3 shadow-xs">
+            {/* Live Step Status Banner */}
+            <div className="flex items-center justify-between bg-[#F4F2EC] border border-stone-300 px-3 py-2 rounded-lg text-xs font-black text-[#151719]">
+              <div className="flex items-center gap-2">
+                <Activity className="size-4 text-[#D94E28] animate-spin" />
+                <span>{currentStepDescription}</span>
+              </div>
+              <span className="text-[10px] font-mono text-stone-500 bg-white border border-stone-300 px-2 py-0.5 rounded">
+                STEP {currentStepIndex + 1} OF {fullPath.length}
+              </span>
+            </div>
+
+            {/* Interactive Step Playback Controls */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleStartStepByStep}
+                  disabled={isStepping}
+                  className="rounded bg-[#D94E28] hover:bg-[#C8401C] transition-all px-3 py-1.5 text-xs font-black text-white flex items-center gap-1.5 disabled:opacity-50 shadow-2xs"
+                >
+                  <Play className="size-3.5 fill-current" /> PLAY STEP-BY-STEP ⚡
+                </button>
+
+                <button
+                  onClick={handleNextStep}
+                  disabled={currentStepIndex >= fullPath.length - 1}
+                  className="rounded bg-stone-900 hover:bg-stone-800 transition-all px-3 py-1.5 text-xs font-black text-white flex items-center gap-1.5 disabled:opacity-50 shadow-2xs"
+                >
+                  <SkipForward className="size-3.5" /> NEXT STEP
+                </button>
+
+                <button
+                  onClick={handleResetStep}
+                  className="rounded bg-stone-100 border border-stone-300 hover:bg-stone-200 transition-all px-3 py-1.5 text-xs font-black text-stone-700 flex items-center gap-1.5"
+                >
+                  <RotateCcw className="size-3.5" /> RESET
+                </button>
+              </div>
+
+              {/* Traversal Speed Switcher */}
+              <div className="flex items-center gap-1 text-[10px] font-bold text-stone-600">
+                <span>SPEED:</span>
+                {[
+                  { ms: 1000, label: 'SLOW' },
+                  { ms: 600, label: 'NORMAL' },
+                  { ms: 300, label: 'FAST' }
+                ].map((sp) => (
+                  <button
+                    key={sp.ms}
+                    onClick={() => setStepSpeedMs(sp.ms)}
+                    className={`px-2 py-0.5 rounded border transition-all ${
+                      stepSpeedMs === sp.ms ? 'bg-[#D94E28] text-white border-[#D94E28] font-black' : 'bg-stone-100 border-stone-300 text-stone-700'
+                    }`}
+                  >
+                    {sp.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -525,19 +649,19 @@ export default function MaritimeNetworkGraph({
               </div>
             )}
 
-            {/* Run Button */}
+            {/* Run Step-by-Step Button */}
             <button
-              onClick={handleRunAlgorithm}
-              disabled={isExecuting}
+              onClick={handleStartStepByStep}
+              disabled={isStepping}
               className="w-full rounded-xl bg-[#D94E28] hover:bg-[#C8401C] transition-all py-3.5 text-xs font-black text-white shadow-xs flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50"
             >
-              {isExecuting ? (
+              {isStepping ? (
                 <>
-                  <Zap className="size-4 animate-spin" /> EXECUTING {algorithm}...
+                  <Zap className="size-4 animate-spin" /> STEPPING THROUGH GRAPH...
                 </>
               ) : (
                 <>
-                  <Play className="size-4 fill-current" /> RUN GRAPH ALGORITHM ⚡
+                  <Play className="size-4 fill-current" /> RUN STEP-BY-STEP GRAPH ALGORITHM ⚡
                 </>
               )}
             </button>
