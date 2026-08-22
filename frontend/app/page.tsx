@@ -24,9 +24,11 @@ export default function EnterpriseMaritimeLandingPage() {
                 SYSTEM STATUS · LIVE MARITIME TELEMETRY
               </div>
 
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-[#151719] tracking-tight leading-[1.1]">
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-[#151719] tracking-tight leading-[1.15]">
                 Make the next shipping decision <br className="hidden sm:inline" />
-                before disruption makes it for you.
+                <span className="font-cursive text-3xl sm:text-4xl lg:text-5xl font-normal text-[#D94E28] tracking-normal inline-block mt-1">
+                  before disruption makes it for you.
+                </span>
               </h1>
 
               <p className="text-base md:text-lg text-stone-600 leading-relaxed max-w-2xl font-normal">
