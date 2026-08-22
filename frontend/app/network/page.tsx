@@ -21,6 +21,7 @@ import SystemSettingsModal from '@/components/SystemSettingsModal'
 import CreateScenarioModal from '@/components/CreateScenarioModal'
 import MaritimeNetworkGraph from '@/components/MaritimeNetworkGraph'
 import MonteCarloArrivalChart from '@/components/MonteCarloArrivalChart'
+import BusinessActionLayer from '@/components/BusinessActionLayer'
 
 const GlobalMap = dynamic(() => import('@/components/GlobalMap'), {
   ssr: false,
@@ -593,6 +594,14 @@ export default function NetworkPage() {
 
         {/* ── SECTION 11: MONTE CARLO ARRIVAL PROBABILITY VISUALIZATION ────── */}
         <MonteCarloArrivalChart originPort={scenarioState.originPort} destPort={scenarioState.destPort} />
+
+        {/* ── SECTION 12: AUTONOMOUS BUSINESS ACTION LAYER & DECISION EXECUTION ── */}
+        <BusinessActionLayer
+          shipmentId="FF-821"
+          originPort={scenarioState.originPort}
+          destPort={scenarioState.destPort}
+          reroutePath={reroutes[0]?.waypoints || [scenarioState.originPort, 'Jaipur', scenarioState.destPort]}
+        />
 
         {/* ── SECTION 4: DATA SOURCES & BOTTOM CTA ────────────────────── */}
         <div className="rounded-lg border border-stone-300 bg-white p-5 md:p-6 flex flex-wrap items-center justify-between gap-5 shadow-2xs font-mono">
