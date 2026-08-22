@@ -1,0 +1,985 @@
+{
+  "analysis_id": "ANALYSIS-1A74C218",
+  "timestamp": "2026-08-22T13:24:31.400959+00:00",
+  "request": {
+    "origin": "NLRTM",
+    "origin_unlocode": "NLRTM",
+    "origin_name": "Port of Rotterdam",
+    "destination": "SGSIN",
+    "destination_unlocode": "SGSIN",
+    "destination_name": "Port of Singapore",
+    "carrier": "MAERSK",
+    "shipment_mode": "Ocean",
+    "cargo_weight_mt": 25.0,
+    "cargo_units": 500,
+    "cargo_value_usd": 350000.0,
+    "baseline_eta_hours": 384.0,
+    "vessel_speed_knots": 15.0,
+    "shipment_date": "2026-08-25",
+    "vendor": "Global Logistics Corp",
+    "vendor_inco_term": "CIF"
+  },
+  "live_telemetry": {
+    "current_weather": {
+      "hazard": "LOW",
+      "source": "FALLBACK",
+      "temperature": 29.1,
+      "wind_speed_kts": 7.18,
+      "wave_height_m": 0.32,
+      "sea_temperature": null,
+      "status": "UNAVAILABLE",
+      "timestamp": "2026-08-22T13:24:37.410125+00:00"
+    },
+    "geopolitical_risk": {
+      "value": 1.0,
+      "source": "LIVE_GDACS_GDELT",
+      "timestamp": "2026-08-22T13:24:38.390168+00:00",
+      "status": "OK",
+      "active_red_alerts": 22,
+      "active_orange_alerts": 78
+    },
+    "carrier_risk": {
+      "value": 0.12,
+      "source": "CONFIGURED",
+      "timestamp": "2026-08-22T13:24:38.390060+00:00",
+      "status": "OK"
+    },
+    "carrier_reliability_score": {
+      "value": 0.88,
+      "source": "CONFIGURED",
+      "timestamp": "2026-08-22T13:24:38.390060+00:00",
+      "status": "OK"
+    },
+    "fuel_price_index": {
+      "value": 1.0,
+      "source": "FALLBACK",
+      "timestamp": "2026-08-22T13:24:38.390129+00:00",
+      "status": "DEFAULT_FALLBACK"
+    },
+    "active_disasters_count": 5
+  },
+  "ml_predictions": {
+    "disruption": {
+      "value": 0.2295,
+      "source": "TRAINED_MODEL",
+      "model_file": "disruption_model.pkl"
+    },
+    "eta": {
+      "predicted_eta_days": 5.76,
+      "predicted_eta_hours": 138.3,
+      "baseline_eta_hours": 384.0,
+      "source": "TRAINED_MODEL",
+      "model_file": "ETA_Agent.pkl"
+    },
+    "delay": {
+      "delay_probability_percent": 2.5,
+      "estimated_delay_hours": 0.0,
+      "source": "TRAINED_MODEL",
+      "model_file": "Calibrated_Delay_Agent.pkl"
+    },
+    "cost": {
+      "value": 6857.8,
+      "source": "TRAINED_MODEL",
+      "model_file": "flowforge_cost_optimizer_xgb.pkl"
+    }
+  },
+  "route_analysis": {
+    "corridor": "Port of Rotterdam \u2192 Port of Singapore",
+    "route_hazard": {
+      "worst_hazard": "CRITICAL",
+      "cyclone_on_path": true,
+      "source": "LIVE_OPEN_METEO"
+    },
+    "sampled_waypoints": [
+      {
+        "hours_ahead": 1.0,
+        "lat": 51.9247,
+        "lon": 4.9031,
+        "hazard": "CRITICAL",
+        "wind_speed_kts": 8.75,
+        "wave_height_m": 1.5,
+        "cyclone_warning": true,
+        "hazard_score": 1.0
+      },
+      {
+        "hours_ahead": 3.0,
+        "lat": 51.9627,
+        "lon": 5.7113,
+        "hazard": "CRITICAL",
+        "wind_speed_kts": 7.56,
+        "wave_height_m": 1.5,
+        "cyclone_warning": true,
+        "hazard_score": 1.0
+      },
+      {
+        "hours_ahead": 6.0,
+        "lat": 52.0093,
+        "lon": 6.926,
+        "hazard": "CRITICAL",
+        "wind_speed_kts": 7.56,
+        "wave_height_m": 1.5,
+        "cyclone_warning": true,
+        "hazard_score": 1.0
+      }
+    ],
+    "alternative_routes": [
+      {
+        "route_id": "ALT-KOBE-01",
+        "description": "Diversion via Kii Channel \u2192 Port of Kobe (JPUKB)",
+        "route_score": 0.45,
+        "extra_distance_nm": 180.0,
+        "extra_transit_hours": 12.0,
+        "recommendation": "DIVERT VIA KII CHANNEL TO KOBE \u2014 avoids cyclone corridor",
+        "safety_rating": "HIGH"
+      },
+      {
+        "route_id": "ALT-NAGOYA-02",
+        "description": "Diversion via Ise Bay \u2192 Port of Nagoya (JPNGO)",
+        "route_score": 0.6,
+        "extra_distance_nm": 110.0,
+        "extra_transit_hours": 7.3,
+        "recommendation": "DIVERT VIA ISE BAY TO NAGOYA \u2014 partial hazard avoidance",
+        "safety_rating": "MEDIUM"
+      }
+    ],
+    "reroute_required": true
+  },
+  "cost_analysis": {
+    "ml_predicted_base_cost": {
+      "value": 6857.8,
+      "source": "TRAINED_MODEL",
+      "model_file": "flowforge_cost_optimizer_xgb.pkl"
+    },
+    "total_reroute_cost_usd": {
+      "value": 25372.23,
+      "source": "DERIVED_CALCULATION"
+    },
+    "gross_savings_usd": {
+      "value": 33750.0,
+      "source": "DERIVED_CALCULATION"
+    },
+    "net_financial_savings_usd": {
+      "value": 8377.77,
+      "source": "DERIVED_CALCULATION"
+    },
+    "breakdown": {
+      "cost_breakdown": {
+        "extra_fuel_tons": 18.72,
+        "extra_fuel_cost_usd": 12168.0,
+        "extra_charter_cost_usd": 13204.23,
+        "total_reroute_cost_usd": 25372.23,
+        "source": "DERIVED_CALCULATION"
+      },
+      "savings_breakdown": {
+        "demurrage_saved_usd": 33750.0,
+        "total_gross_savings_usd": 33750.0,
+        "source": "DERIVED_CALCULATION"
+      }
+    }
+  },
+  "monte_carlo": {
+    "simulation_count": 10000,
+    "source": "MONTE_CARLO",
+    "eta": {
+      "p50": 138.3,
+      "p90": 440.3,
+      "p95": 477.2,
+      "p99": 616.8
+    },
+    "cost": {
+      "mean": 6900.66,
+      "p50": 3562.95,
+      "p90": 16223.14,
+      "p95": 22877.91,
+      "p99": 49111.28
+    },
+    "risk": {
+      "disruption_probability": 0.2293,
+      "deadline_miss_probability": 0.1728,
+      "budget_overrun_probability": 0.0873
+    },
+    "eta_percentiles": {
+      "P50": 138.3,
+      "P90": 440.3,
+      "P95": 477.2,
+      "P99": 616.8
+    },
+    "eta_confidence_interval_95": {
+      "lower_hours": 138.3,
+      "upper_hours": 496.9
+    },
+    "cost_percentiles": {
+      "P50": 3562.95,
+      "P90": 16223.14,
+      "P95": 22877.91,
+      "P99": 49111.28
+    },
+    "cost_confidence_interval_95": {
+      "lower_usd": 258.75,
+      "upper_usd": 31555.22
+    },
+    "disruption_probability": 0.2295,
+    "deadline_miss_probability": 0.1728,
+    "budget_overrun_probability": 0.0873,
+    "on_time_delivery_probability": 0.8272,
+    "composite_risk_score": 0.1642,
+    "recommendation_confidence": "LOW",
+    "simulation_stats": {
+      "eta_mean_hours": 233.1,
+      "eta_std_hours": 130.2,
+      "cost_mean_usd": 6900.66,
+      "cost_std_usd": 9979.91,
+      "disruption_events_count": 2293,
+      "weather_hazard_multiplier": 1.0,
+      "distributions_used": [
+        "cost_ratio_distribution",
+        "customs_clearance_time",
+        "customs_delay_distribution",
+        "delay_probability",
+        "delivery_time_deviation",
+        "disruption_delay_distribution",
+        "disruption_likelihood_score",
+        "eta_error_distribution",
+        "eta_variation_hours",
+        "lead_time_days",
+        "loading_unloading_time",
+        "port_congestion_level"
+      ],
+      "seed": 42
+    }
+  },
+  "decision": {
+    "recommended_route": "Baseline Corridor (NLRTM \u2192 SGSIN)",
+    "recommendation_score": {
+      "value": 0.8835,
+      "source": "DERIVED_CALCULATION"
+    },
+    "risk_score": {
+      "value": 0.2295,
+      "source": "DERIVED_CALCULATION"
+    },
+    "eta_days": {
+      "value": 5.76,
+      "source": "DERIVED_CALCULATION"
+    },
+    "total_cost_usd": {
+      "value": 6857.8,
+      "source": "DERIVED_CALCULATION"
+    },
+    "reasoning_factors": [
+      "Disruption risk on primary corridor evaluated at 22% by disruption_model.pkl.",
+      "Predicted transit time: 5.8 days with delay probability of 2.5%.",
+      "Net financial savings from executing diversion estimated at $8,377.77 USD.",
+      "Decision weights applied: Risk=35%, ETA=35%, Cost=30% (Profile: Global Logistics Corp)."
+    ],
+    "tradeoffs": [
+      "Choosing Baseline Corridor (NLRTM \u2192 SGSIN) balances maritime hazard avoidance against extra transit distance.",
+      "Baseline transit cost is $6,857.80 USD vs $6,857.80 USD total diversion cost."
+    ],
+    "candidate_evaluations": [
+      {
+        "route_name": "Baseline Corridor (NLRTM \u2192 SGSIN)",
+        "unlocode": "SGSIN",
+        "recommendation_score": 0.8835,
+        "risk_score": 0.2295,
+        "eta_days": 5.76,
+        "total_cost_usd": 6857.8,
+        "reroute_required": false
+      },
+      {
+        "route_name": "Divert via None (ALT-KOBE-01)",
+        "unlocode": null,
+        "recommendation_score": 0.7229,
+        "risk_score": 0.1,
+        "eta_days": 4.76,
+        "total_cost_usd": 32230.03,
+        "reroute_required": true,
+        "extra_distance_nm": 180.0
+      },
+      {
+        "route_name": "Divert via None (ALT-NAGOYA-02)",
+        "unlocode": null,
+        "recommendation_score": 0.7229,
+        "risk_score": 0.1,
+        "eta_days": 4.76,
+        "total_cost_usd": 32230.03,
+        "reroute_required": true,
+        "extra_distance_nm": 110.0
+      }
+    ],
+    "decision_weights": {
+      "risk_weight": 0.35,
+      "eta_weight": 0.35,
+      "cost_weight": 0.3,
+      "profile_key": "Global Logistics Corp",
+      "source": "ADAPTIVE_PREFERENCE_LEARNING"
+    }
+  },
+  "recovery_playbook": {
+    "recovery_time": "18H",
+    "risk_reduction": "64%",
+    "net_savings_usd": 8377.77,
+    "steps": [
+      {
+        "step": 1,
+        "title": "DIVERT MAERSK \u2192 PORT OF KOBE (JPUKB)",
+        "status": "PENDING"
+      },
+      {
+        "step": 2,
+        "title": "INCREASE OSAKA WAREHOUSE INVENTORY \u2192 +18%",
+        "status": "PENDING"
+      },
+      {
+        "step": 3,
+        "title": "SWITCH SUPPLIER ROUTE VIA NAGOYA (JPNGO) CORRIDOR",
+        "status": "PENDING"
+      },
+      {
+        "step": 4,
+        "title": "PRIORITIZE HIGH-VALUE COLD-CHAIN CARGO",
+        "status": "PENDING"
+      },
+      {
+        "step": 5,
+        "title": "TRIGGER AUTOMATED DEMURRAGE NOTIFICATION",
+        "status": "PENDING"
+      }
+    ],
+    "source": "DERIVED_CALCULATION"
+  },
+  "provenance": {
+    "disruption": 0.2295,
+    "eta": {
+      "predicted_eta_days": 5.76,
+      "predicted_eta_hours": 138.3,
+      "baseline_eta_hours": 384.0,
+      "source": "TRAINED_MODEL",
+      "model_file": "ETA_Agent.pkl"
+    },
+    "delay": {
+      "delay_probability_percent": 2.5,
+      "estimated_delay_hours": 0.0,
+      "source": "TRAINED_MODEL",
+      "model_file": "Calibrated_Delay_Agent.pkl"
+    },
+    "cost": {
+      "value": 6857.8,
+      "source": "TRAINED_MODEL",
+      "model_file": "flowforge_cost_optimizer_xgb.pkl"
+    },
+    "telemetry": {
+      "current_weather": {
+        "hazard": "LOW",
+        "source": "FALLBACK",
+        "temperature": 29.1,
+        "wind_speed_kts": 7.18,
+        "wave_height_m": 0.32,
+        "sea_temperature": null,
+        "status": "UNAVAILABLE",
+        "timestamp": "2026-08-22T13:24:37.410125+00:00"
+      },
+      "geopolitical_risk": {
+        "value": 1.0,
+        "source": "LIVE_GDACS_GDELT",
+        "timestamp": "2026-08-22T13:24:38.390168+00:00",
+        "status": "OK",
+        "active_red_alerts": 22,
+        "active_orange_alerts": 78
+      },
+      "carrier_risk": {
+        "value": 0.12,
+        "source": "CONFIGURED",
+        "timestamp": "2026-08-22T13:24:38.390060+00:00",
+        "status": "OK"
+      },
+      "carrier_reliability_score": {
+        "value": 0.88,
+        "source": "CONFIGURED",
+        "timestamp": "2026-08-22T13:24:38.390060+00:00",
+        "status": "OK"
+      },
+      "fuel_price_index": {
+        "value": 1.0,
+        "source": "FALLBACK",
+        "timestamp": "2026-08-22T13:24:38.390129+00:00",
+        "status": "DEFAULT_FALLBACK"
+      },
+      "active_disasters_count": 5
+    }
+  },
+  "system_status": {
+    "system": "FlowForge Intelligence Layer",
+    "status": "OPERATIONAL",
+    "models": {
+      "disruption": "READY",
+      "eta": "READY",
+      "delay": "READY",
+      "cost": "READY",
+      "monte_carlo": "READY"
+    },
+    "live_services": {
+      "weather": "FALLBACK",
+      "geopolitical": "OK",
+      "carrier": "CONFIGURED",
+      "fuel": "DEFAULT_FALLBACK"
+    },
+    "orchestrator": "READY",
+    "decision_engine": "READY"
+  },
+  "shipment": {
+    "origin": "NLRTM",
+    "origin_unlocode": "NLRTM",
+    "origin_name": "Port of Rotterdam",
+    "destination": "SGSIN",
+    "destination_unlocode": "SGSIN",
+    "destination_name": "Port of Singapore",
+    "carrier": "MAERSK",
+    "shipment_mode": "Ocean",
+    "cargo_weight_mt": 25.0,
+    "cargo_units": 500,
+    "cargo_value_usd": 350000.0,
+    "baseline_eta_hours": 384.0,
+    "vessel_speed_knots": 15.0,
+    "shipment_date": "2026-08-25",
+    "vendor": "Global Logistics Corp",
+    "vendor_inco_term": "CIF"
+  },
+  "live_conditions": {
+    "weather": {
+      "latitude": 1.2644,
+      "longitude": 103.8223,
+      "wind_speed": 7.18,
+      "rainfall": 0.0,
+      "wave_height": 0.32,
+      "visibility": 14700.0,
+      "temperature": 29.1,
+      "storm_severity": "LOW",
+      "weather_condition": "Clear",
+      "cyclone_warning": false,
+      "cyclone_name": null,
+      "hazard": "LOW",
+      "source": "LIVE_OPEN_METEO",
+      "status": "OK",
+      "timestamp": "2026-08-22T13:24:37.410125+00:00"
+    },
+    "disasters_count": 5,
+    "active_disasters": [
+      {
+        "type": "EARTHQUAKE",
+        "title": "M 6.2 - Scotia Sea",
+        "magnitude": 6.2,
+        "place": "Scotia Sea",
+        "latitude": -60.3789,
+        "longitude": -47.6047,
+        "timestamp": 1787386957740,
+        "source": "LIVE_USGS"
+      },
+      {
+        "type": "EARTHQUAKE",
+        "title": "M 5.7 - Scotia Sea",
+        "magnitude": 5.7,
+        "place": "Scotia Sea",
+        "latitude": -60.2649,
+        "longitude": -47.2591,
+        "timestamp": 1787384412697,
+        "source": "LIVE_USGS"
+      },
+      {
+        "type": "EARTHQUAKE",
+        "title": "M 5.0 - 45 km SE of Lukatan, Philippines",
+        "magnitude": 5,
+        "place": "45 km SE of Lukatan, Philippines",
+        "latitude": 6.7397,
+        "longitude": 126.7362,
+        "timestamp": 1787381019032,
+        "source": "LIVE_USGS"
+      },
+      {
+        "type": "EARTHQUAKE",
+        "title": "M 5.0 - 6 km S of Kitcharao, Philippines",
+        "magnitude": 5,
+        "place": "6 km S of Kitcharao, Philippines",
+        "latitude": 9.3981,
+        "longitude": 125.5805,
+        "timestamp": 1787373848744,
+        "source": "LIVE_USGS"
+      },
+      {
+        "type": "EARTHQUAKE",
+        "title": "M 5.3 - southern Mid-Atlantic Ridge",
+        "magnitude": 5.3,
+        "place": "southern Mid-Atlantic Ridge",
+        "latitude": -12.7714,
+        "longitude": -14.8824,
+        "timestamp": 1787362497606,
+        "source": "LIVE_USGS"
+      }
+    ]
+  },
+  "agents": {
+    "disruption": {
+      "agent": "DISRUPTION_AGENT",
+      "target_port": "Port of Singapore",
+      "disruption_probability": {
+        "value": 0.2295,
+        "source": "TRAINED_MODEL",
+        "model_file": "disruption_model.pkl"
+      },
+      "disruption_probability_percent": 22.95,
+      "disruption_class": "STABLE",
+      "risk_level": "STABLE",
+      "decision_threshold": 0.53,
+      "prediction_source": "TRAINED_MODEL",
+      "model_file": "disruption_model.pkl",
+      "ml_model_active": true,
+      "contributing_features": {
+        "Operational_Stress": 0.2435,
+        "Geo_Port_Risk": 0.2,
+        "Port_Congestion_Score": 0.45,
+        "derivation": {
+          "Operational_Stress": "clip(wind_knots/40 + wave_m/5, 0, 1)",
+          "Geo_Port_Risk": "live geopolitical risk score [0-1]",
+          "Port_Congestion_Score": "port registry congestion index [0-1]",
+          "source": "LIVE_DATA_DERIVED"
+        }
+      },
+      "active_disasters_count": 5,
+      "active_typhoons_count": 0,
+      "hazard_level": "LOW"
+    },
+    "route": {
+      "agent": "ROUTE_AGENT",
+      "corridor": "Port of Rotterdam \u2192 Port of Singapore",
+      "worst_hazard_ahead": "CRITICAL",
+      "worst_hazard_score": 1.0,
+      "cyclone_on_path": true,
+      "current_route_score": 1.0,
+      "sampled_waypoints": [
+        {
+          "hours_ahead": 1.0,
+          "lat": 51.9247,
+          "lon": 4.9031,
+          "hazard": "CRITICAL",
+          "wind_speed_kts": 8.75,
+          "wave_height_m": 1.5,
+          "cyclone_warning": true,
+          "hazard_score": 1.0
+        },
+        {
+          "hours_ahead": 3.0,
+          "lat": 51.9627,
+          "lon": 5.7113,
+          "hazard": "CRITICAL",
+          "wind_speed_kts": 7.56,
+          "wave_height_m": 1.5,
+          "cyclone_warning": true,
+          "hazard_score": 1.0
+        },
+        {
+          "hours_ahead": 6.0,
+          "lat": 52.0093,
+          "lon": 6.926,
+          "hazard": "CRITICAL",
+          "wind_speed_kts": 7.56,
+          "wave_height_m": 1.5,
+          "cyclone_warning": true,
+          "hazard_score": 1.0
+        }
+      ],
+      "candidate_routes": [
+        {
+          "route_id": "DIRECT-00",
+          "description": "Direct route: Port of Rotterdam \u2192 Port of Singapore",
+          "route_score": 1.0,
+          "extra_distance_nm": 0.0,
+          "extra_transit_hours": 0.0,
+          "recommendation": "MAINTAIN CURRENT COURSE",
+          "safety_rating": "LOW"
+        },
+        {
+          "route_id": "ALT-KOBE-01",
+          "description": "Diversion via Kii Channel \u2192 Port of Kobe (JPUKB)",
+          "route_score": 0.45,
+          "extra_distance_nm": 180.0,
+          "extra_transit_hours": 12.0,
+          "recommendation": "DIVERT VIA KII CHANNEL TO KOBE \u2014 avoids cyclone corridor",
+          "safety_rating": "HIGH"
+        },
+        {
+          "route_id": "ALT-NAGOYA-02",
+          "description": "Diversion via Ise Bay \u2192 Port of Nagoya (JPNGO)",
+          "route_score": 0.6,
+          "extra_distance_nm": 110.0,
+          "extra_transit_hours": 7.3,
+          "recommendation": "DIVERT VIA ISE BAY TO NAGOYA \u2014 partial hazard avoidance",
+          "safety_rating": "MEDIUM"
+        }
+      ],
+      "selected_route": {
+        "route_id": "ALT-KOBE-01",
+        "description": "Diversion via Kii Channel \u2192 Port of Kobe (JPUKB)",
+        "route_score": 0.45,
+        "extra_distance_nm": 180.0,
+        "extra_transit_hours": 12.0,
+        "recommendation": "DIVERT VIA KII CHANNEL TO KOBE \u2014 avoids cyclone corridor",
+        "safety_rating": "HIGH"
+      },
+      "alternative_routes": [
+        {
+          "route_id": "ALT-KOBE-01",
+          "description": "Diversion via Kii Channel \u2192 Port of Kobe (JPUKB)",
+          "route_score": 0.45,
+          "extra_distance_nm": 180.0,
+          "extra_transit_hours": 12.0,
+          "recommendation": "DIVERT VIA KII CHANNEL TO KOBE \u2014 avoids cyclone corridor",
+          "safety_rating": "HIGH"
+        },
+        {
+          "route_id": "ALT-NAGOYA-02",
+          "description": "Diversion via Ise Bay \u2192 Port of Nagoya (JPNGO)",
+          "route_score": 0.6,
+          "extra_distance_nm": 110.0,
+          "extra_transit_hours": 7.3,
+          "recommendation": "DIVERT VIA ISE BAY TO NAGOYA \u2014 partial hazard avoidance",
+          "safety_rating": "MEDIUM"
+        }
+      ],
+      "reroute_required": true,
+      "hazard_source": "LIVE_OPEN_METEO"
+    },
+    "eta": {
+      "agent": "ETA_AGENT",
+      "destination_port": "Port of Singapore",
+      "unlocode": "SGSIN",
+      "distance_km": 277.98,
+      "distance_nm": 150.09,
+      "nominal_hours": 168.0,
+      "predicted_total_hours": 138.3,
+      "estimated_delay_hours": 0.0,
+      "predicted_delay_days": 0.0,
+      "delay_probability_percent": 2.5,
+      "delay_classification": "ON_TIME",
+      "confidence": "HIGH",
+      "ml_models_active": true,
+      "eta_prediction_source": "TRAINED_MODEL",
+      "delay_prediction_source": "TRAINED_MODEL",
+      "model_features": {
+        "Distance_km": 277.9751,
+        "Weight_MT": 15.0,
+        "Weather_Risk": 0.2,
+        "Carrier_Risk": 0.12,
+        "Geo_Risk": 1.0,
+        "Port_Congestion": 0.8,
+        "Operational_Stress": 0.2435,
+        "Route_Risk": 0.5,
+        "Geo_Port_Risk": 0.8,
+        "Weather_Port_Risk": 0.16,
+        "Geo_Weather_Risk": 0.2,
+        "Weather_Carrier_Risk": 0.024,
+        "Port_Carrier_Risk": 0.096,
+        "Fuel_Price_Index": 1.0,
+        "Baseline_ETA_hours": 168.0,
+        "Geopolitical_Risk_Score": 1.0
+      },
+      "provenance": {
+        "carrier_risk": {
+          "value": 0.12,
+          "source": "CONFIGURED",
+          "timestamp": "2026-08-22T13:24:56.667768+00:00",
+          "status": "OK"
+        },
+        "fuel_price_index": {
+          "value": 1.0,
+          "source": "FALLBACK",
+          "timestamp": "2026-08-22T13:24:56.667795+00:00",
+          "status": "DEFAULT_FALLBACK"
+        },
+        "geopolitical_risk": {
+          "value": 1.0,
+          "source": "LIVE_GDACS_GDELT",
+          "timestamp": "2026-08-22T13:24:56.667825+00:00",
+          "status": "OK",
+          "active_red_alerts": 22,
+          "active_orange_alerts": 78
+        }
+      }
+    },
+    "cost": {
+      "agent": "COST_AGENT",
+      "vessel_name": "MAERSK",
+      "baseline_route_nm": 5760.0,
+      "alternative_route_nm": 5940.0,
+      "extra_distance_nm": 180.0,
+      "ml_predicted_shipment_cost": {
+        "value": 6857.8,
+        "source": "TRAINED_MODEL",
+        "model_file": "flowforge_cost_optimizer_xgb.pkl"
+      },
+      "cost_breakdown": {
+        "extra_fuel_tons": 18.72,
+        "extra_fuel_cost_usd": 12168.0,
+        "extra_charter_cost_usd": 13204.23,
+        "total_reroute_cost_usd": 25372.23,
+        "source": "DERIVED_CALCULATION"
+      },
+      "savings_breakdown": {
+        "demurrage_saved_usd": 33750.0,
+        "total_gross_savings_usd": 33750.0,
+        "source": "DERIVED_CALCULATION"
+      },
+      "net_financial_savings_usd": {
+        "value": 8377.77,
+        "source": "DERIVED_CALCULATION"
+      },
+      "recommendation": "EXECUTE REROUTE \u2014 Positive Net ROI",
+      "fuel_provenance": {
+        "value": 650.0,
+        "source": "FALLBACK",
+        "timestamp": "2026-08-22T13:24:59.342595+00:00",
+        "status": "DEFAULT_FALLBACK"
+      },
+      "ml_model_active": true
+    },
+    "monte_carlo": {
+      "simulation_count": 10000,
+      "source": "MONTE_CARLO",
+      "eta": {
+        "p50": 138.3,
+        "p90": 440.3,
+        "p95": 477.2,
+        "p99": 616.8
+      },
+      "cost": {
+        "mean": 6900.66,
+        "p50": 3562.95,
+        "p90": 16223.14,
+        "p95": 22877.91,
+        "p99": 49111.28
+      },
+      "risk": {
+        "disruption_probability": 0.2293,
+        "deadline_miss_probability": 0.1728,
+        "budget_overrun_probability": 0.0873
+      },
+      "eta_percentiles": {
+        "P50": 138.3,
+        "P90": 440.3,
+        "P95": 477.2,
+        "P99": 616.8
+      },
+      "eta_confidence_interval_95": {
+        "lower_hours": 138.3,
+        "upper_hours": 496.9
+      },
+      "cost_percentiles": {
+        "P50": 3562.95,
+        "P90": 16223.14,
+        "P95": 22877.91,
+        "P99": 49111.28
+      },
+      "cost_confidence_interval_95": {
+        "lower_usd": 258.75,
+        "upper_usd": 31555.22
+      },
+      "disruption_probability": 0.2295,
+      "deadline_miss_probability": 0.1728,
+      "budget_overrun_probability": 0.0873,
+      "on_time_delivery_probability": 0.8272,
+      "composite_risk_score": 0.1642,
+      "recommendation_confidence": "LOW",
+      "simulation_stats": {
+        "eta_mean_hours": 233.1,
+        "eta_std_hours": 130.2,
+        "cost_mean_usd": 6900.66,
+        "cost_std_usd": 9979.91,
+        "disruption_events_count": 2293,
+        "weather_hazard_multiplier": 1.0,
+        "distributions_used": [
+          "cost_ratio_distribution",
+          "customs_clearance_time",
+          "customs_delay_distribution",
+          "delay_probability",
+          "delivery_time_deviation",
+          "disruption_delay_distribution",
+          "disruption_likelihood_score",
+          "eta_error_distribution",
+          "eta_variation_hours",
+          "lead_time_days",
+          "loading_unloading_time",
+          "port_congestion_level"
+        ],
+        "seed": 42
+      }
+    }
+  },
+  "telemetry_provenance": {
+    "current_weather": {
+      "hazard": "LOW",
+      "source": "FALLBACK",
+      "temperature": 29.1,
+      "wind_speed_kts": 7.18,
+      "wave_height_m": 0.32,
+      "sea_temperature": null,
+      "status": "UNAVAILABLE",
+      "timestamp": "2026-08-22T13:24:37.410125+00:00"
+    },
+    "geopolitical_risk": {
+      "value": 1.0,
+      "source": "LIVE_GDACS_GDELT",
+      "timestamp": "2026-08-22T13:24:38.390168+00:00",
+      "status": "OK",
+      "active_red_alerts": 22,
+      "active_orange_alerts": 78
+    },
+    "carrier_risk": {
+      "value": 0.12,
+      "source": "CONFIGURED",
+      "timestamp": "2026-08-22T13:24:38.390060+00:00",
+      "status": "OK"
+    },
+    "carrier_reliability_score": {
+      "value": 0.88,
+      "source": "CONFIGURED",
+      "timestamp": "2026-08-22T13:24:38.390060+00:00",
+      "status": "OK"
+    },
+    "fuel_price_index": {
+      "value": 1.0,
+      "source": "FALLBACK",
+      "timestamp": "2026-08-22T13:24:38.390129+00:00",
+      "status": "DEFAULT_FALLBACK"
+    },
+    "active_disasters_count": 5
+  },
+  "model_provenance": {
+    "registry_status": "ACTIVE",
+    "loaded_models_count": 5,
+    "models_loaded": {
+      "disruption_model": true,
+      "eta_model": true,
+      "route_model": true,
+      "cost_model": true,
+      "monte_carlo": true
+    },
+    "monte_carlo": {
+      "loaded": true,
+      "distributions_count": 12,
+      "simulation_count": 10000
+    },
+    "preprocessing_objects_loaded": true,
+    "models": {
+      "disruption_model.pkl": {
+        "status": "LOADED",
+        "file": "disruption_model.pkl",
+        "model_type": "ExtraTreesClassifier",
+        "prediction_source": "TRAINED_MODEL",
+        "expected_features": [
+          "Operational_Stress",
+          "Geo_Port_Risk",
+          "Port_Congestion_Score"
+        ],
+        "feature_count": 3,
+        "target_variable": "disruption_probability",
+        "prediction_method": "predict_proba()[:, 1]",
+        "version": "1.8.0"
+      },
+      "eta_model.pkl": {
+        "status": "LOADED",
+        "file": "ETA_Agent.pkl",
+        "model_type": "XGBRegressor",
+        "prediction_source": "TRAINED_MODEL",
+        "expected_features": [
+          "Distance_km",
+          "Weight_MT",
+          "Weather_Risk",
+          "Carrier_Risk",
+          "Geo_Risk",
+          "Port_Congestion",
+          "Operational_Stress",
+          "Route_Risk",
+          "Geo_Port_Risk",
+          "Weather_Port_Risk",
+          "Geo_Weather_Risk",
+          "Weather_Carrier_Risk",
+          "Port_Carrier_Risk"
+        ],
+        "feature_count": 13,
+        "target_variable": "Predicted_ETA_days",
+        "prediction_method": "predict()",
+        "version": "XGBoost 2.1.0"
+      },
+      "delay_model.pkl": {
+        "status": "LOADED",
+        "file": "Calibrated_Delay_Agent.pkl",
+        "model_type": "CalibratedClassifierCV",
+        "prediction_source": "TRAINED_MODEL",
+        "expected_features": [
+          "Distance_km",
+          "Weight_MT",
+          "Fuel_Price_Index",
+          "Baseline_ETA_hours",
+          "Weather_Risk",
+          "Carrier_Risk",
+          "Geo_Risk",
+          "Geopolitical_Risk_Score",
+          "Port_Congestion",
+          "Operational_Stress",
+          "Route_Risk",
+          "Geo_Port_Risk",
+          "Weather_Port_Risk",
+          "Geo_Weather_Risk",
+          "Weather_Carrier_Risk",
+          "Port_Carrier_Risk"
+        ],
+        "feature_count": 16,
+        "target_variable": "Delay_Probability",
+        "prediction_method": "predict_proba()[:, 1]",
+        "version": "1.8.0"
+      },
+      "cost_model.pkl": {
+        "status": "LOADED",
+        "file": "flowforge_cost_optimizer_xgb.pkl",
+        "model_type": "Pipeline",
+        "prediction_source": "TRAINED_MODEL",
+        "expected_features": [
+          "line_item_quantity",
+          "line_item_value",
+          "pack_price",
+          "unit_price",
+          "weight_kilograms",
+          "line_item_insurance_usd",
+          "shipment_mode",
+          "country",
+          "vendor",
+          "fulfill_via",
+          "vendor_inco_term"
+        ],
+        "feature_count": 11,
+        "target_variable": "optimized_logistics_cost_usd",
+        "prediction_method": "predict()",
+        "version": "XGBoost Pipeline 2.1.0"
+      },
+      "monte_carlo": {
+        "status": "LOADED",
+        "arrays_loaded": [
+          "cost_ratio_distribution",
+          "customs_clearance_time",
+          "customs_delay_distribution",
+          "delay_probability",
+          "delivery_time_deviation",
+          "disruption_delay_distribution",
+          "disruption_likelihood_score",
+          "eta_error_distribution",
+          "eta_variation_hours",
+          "lead_time_days",
+          "loading_unloading_time",
+          "port_congestion_level"
+        ],
+        "simulation_count": 10000,
+        "seed": 42,
+        "missing_arrays": []
+      }
+    }
+  }
+}

@@ -1,0 +1,109 @@
+================================================================================
+FLOWFORGE — MASTER UI SECTIONS & MEASURED METRICS COMPLETE SPECIFICATION PROMPT
+================================================================================
+
+This master document contains the exact architectural prompt, page-by-page section breakdown, measured metrics, data schemas, and interactive workflows to clone or rebuild the entire FlowForge Supply Chain Intelligence Platform on any laptop or frontend framework.
+
+--------------------------------------------------------------------------------
+1. GLOBAL DESIGN SYSTEM & TYPOGRAPHY
+--------------------------------------------------------------------------------
+- Typography System:
+  * Headers & Titles: Inter (Black 900)
+  * Numbers, Metrics & Data Tables: JetBrains Mono (Bold 700 / Black 800)
+  * Annotations & Accent Quotes: Caveat (Cursive 700)
+- Color Palette:
+  * Page Background: #F9F8F6 (Warm Porcelain/Stone)
+  * Card Containers: #FFFFFF (Pure White) with 1px #E5E3DC border
+  * Primary Accent: #D94E28 (FlowForge Flame Orange)
+  * Positive / Savings Accent: #047857 (Emerald Green)
+  * Danger / Risk Accent: #991B1B (Deep Crimson)
+  * Dark Text: #151719 (Charcoal)
+
+--------------------------------------------------------------------------------
+2. PAGE 01 · GLOBAL NETWORK OVERVIEW (`/network`)
+--------------------------------------------------------------------------------
+SECTIONS & METRICS:
+- Header Navigation Bar: Logo badge, Page links (`GLOBAL NETWORK`, `DISRUPTIONS`, `SIMULATION`, `DECISIONS`), `+ NEW ANALYSIS` button, Live System Health Badge (`LIVE` / `STANDBY`).
+- Executive KPI Cards:
+  1. TOTAL SHIPMENTS IN TRANSIT: 1,420 Active
+  2. CRITICAL DISRUPTIONS ACTIVE: 14 High Risk
+  3. EXPOSED CARGO VALUE: $18.4M USD
+  4. TOTAL NET SAVINGS YTD: $4.2M USD
+- Interactive Supply Chain Map: Leaflet/Deck.gl map showing global corridors, port nodes (INNSA, NLRTM, CNSHA, JPYOK), weather squall polygons, and reroute vectors.
+- Active Shipments Status Table: Columns (Shipment ID, Origin, Destination, Carrier, Cargo Value, Delay Risk %, Action Status).
+
+--------------------------------------------------------------------------------
+3. PAGE 02 · REAL-TIME DISRUPTION INTELLIGENCE (`/disruptions`)
+--------------------------------------------------------------------------------
+SECTIONS & METRICS:
+- Disaster & Weather Radar: Real-time Open-Meteo weather hazard feed, GDELT geopolitical alerts, and AIS vessel queue density.
+- Port Congestion Registry: Table of 120+ UN/LOCODE global ports with latitude, longitude, total berths, occupied berths, and calculated Congestion Score (0.0 - 1.0).
+- Key Measured Metrics:
+  * Port Congestion Index: Occupied Berths / Total Berths + Queue Density
+  * Weather Hazard Level: Marine Wind Speed (kts) + Wave Height (m) -> LOW / MEDIUM / HIGH
+  * Geopolitical Risk Score: Conflict & strike alert density index (0.0 - 1.0)
+
+--------------------------------------------------------------------------------
+4. PAGE 03 · SCENARIO STUDIO & MULTI-MODEL INGESTION MODAL (`/api/v1/analyze`)
+--------------------------------------------------------------------------------
+SECTIONS & INPUT FORM:
+1. Corridor Selection: Origin UN/LOCODE (e.g. INNSA), Destination UN/LOCODE (e.g. NLRTM).
+2. Carrier & Mode: Carrier (`MAERSK`, `MSC`, `CMA_CGM`), Mode (`Ocean`, `Air`, `Truck`).
+3. Cargo Specifications: Cargo Weight (MT), Cargo Quantity (Units), Declared Value ($ USD).
+4. Vendor & IncoTerms: Vendor Name, Fulfill Via, IncoTerms (`FOB`, `CIF`, `DDP`).
+5. Baseline Constraints: Baseline ETA (Hours), Deadline Buffer (Hours).
+Action: Click `RUN FLOWFORGE ANALYSIS →` to post to `POST /api/v1/analyze` (triggers 4 ML models + 10,000 Monte Carlo simulation runs).
+
+--------------------------------------------------------------------------------
+5. PAGE 04 · STOCHASTIC RISK SIMULATION CENTER (`/simulation`)
+--------------------------------------------------------------------------------
+SECTIONS & METRICS:
+- Active Scenario Summary Bar: Displays active scenario origin, destination, carrier, cargo value, and weight.
+- 10,000 Possible Futures Chart: Multi-line distribution chart of 10,000 Monte Carlo simulation paths.
+- Key Measured Tail Risk Percentiles:
+  * P50 Delay (Median): +5.2 Hours
+  * P75 Delay: +8.4 Hours
+  * P90 Delay: +13.7 Hours
+  * P95 Delay (Worst Case): +18.2 Hours
+  * P99 Delay (Tail Risk): +32.0 Hours
+  * CVaR95 (Conditional Value at Risk): Expected cost in worst 5% tail
+- PostGIS Spatial Candidate Port Table & Map: Detour distance in Nautical Miles (NM) and extra sailing hours for nearby candidate diversion ports.
+- What-If Strategy Comparison Table (Section 6):
+  * Baseline Route vs Alternative Route vs FlowForge Optimized Route ★
+  * Columns: Strategy, P50 Delay, P95 Delay, Expected Cost, P95 Tail Risk, Disruption Probability.
+
+--------------------------------------------------------------------------------
+6. PAGE 05 · EXPLAINABLE OPERATIONAL DECISION ENGINE (`/decisions`)
+--------------------------------------------------------------------------------
+SECTIONS & METRICS:
+- Recommended Operational Action Banner: Action title (`REROUTE VIA ANTWERP`), Confidence Score (`91%`), Decision Status Badge.
+- Required 5 Human Decision Action Buttons:
+  1. `[ APPROVE DECISION ]` (Primary Green/Orange)
+  2. `[ REJECT ]` (Red outline)
+  3. `[ PAUSE ]` (Amber outline)
+  4. `[ SKIP ]` (Stone outline)
+  5. `[ OVERRIDE ]` (Orange border)
+- Key Business Result Highlight Card (Section 2):
+  * Expected Financial Loss Avoided: $63,000 USD
+  * Additional Reroute Transport Cost: $4,700 USD
+  * Net Financial Benefit: +$58,300 USD
+- What Changes Table (Current Plan vs FlowForge Plan - Section 3):
+  * Disruption Risk (%): 78% -> 18% (-60 pts)
+  * Expected Delay (H): +18.4H -> +5.2H (-13.2H)
+  * Expected Financial Loss ($): $82,000 -> $19,000 (-$63,000 USD)
+  * Transport Cost ($): $14,200 -> $18,900 (+$4,700 USD)
+  * Service Level (%): 71% -> 94% (+23 pts)
+  * SKU Lines at Risk: 142 SKUs -> 31 SKUs (-111 SKUs)
+- Why FlowForge Chose This (Decision Drivers - Section 4): Feature impact rankings (e.g. Berth Congestion Avoidance: +42%, SLA Safeguard: +38%).
+- Evaluated Alternatives Grid (Section 5): Candidate routes with safety rating, extra distance, extra cost, and recommendation badge.
+- Round 2 Decision Reason Capture Modal (Section 6): Operator capture modal with 6 reason categories (COST, RISK, CAPACITY, PREFERENCE, DISAGREEMENT, CUSTOMER COMMITMENT), freeform text area, and submission audit layer.
+- Historical Decisions & Abandonment Audit Log (Section 14): Log of past decisions, user overrides, and saved financial value.
+
+--------------------------------------------------------------------------------
+7. COMPLETE LLM CLONING PROMPT
+--------------------------------------------------------------------------------
+"You are building FlowForge — an Autonomous Supply Chain Intelligence Platform using Next.js 16 (App Router), TailwindCSS, and a FastAPI backend with 4 trained ML models (ExtraTreesClassifier, XGBRegressor, CalibratedClassifierCV, XGBoost Pipeline) + a 10,000-run Monte Carlo Stochastic Engine.
+
+Replicate all 5 pages (/network, /disruptions, /simulation, /decisions, and Scenario Studio modal) using the Inter + JetBrains Mono + Caveat typography system, warm stone color palette (#F9F8F6), 10,000 Monte Carlo distribution charts, PostGIS spatial candidate port table, 5 human decision action buttons ([ APPROVE ], [ REJECT ], [ PAUSE ], [ SKIP ], [ OVERRIDE ]), and the 6-category Round 2 decision reason capture modal.
+
+Ensure all scenario inputs in the modal post to POST /api/v1/analyze, trigger real ML predictions, and dynamically re-render all metric cards, P50-P99 percentiles, loss avoided highlights, and Section 3/6 comparison tables live across the application."

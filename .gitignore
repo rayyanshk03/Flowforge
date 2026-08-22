@@ -1,0 +1,49 @@
+# ─── Environment & Secrets ────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+
+# ─── Python / Backend ─────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.venv/
+venv/
+env/
+*.sqlite3
+*.db
+*.log
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# ─── Node / Frontend ──────────────────────────────────────────────────────────
+node_modules/
+frontend/node_modules/
+frontend/.next/
+frontend/dist/
+frontend/.vite/
+frontend/tsconfig.tsbuildinfo
+frontend/.env
+frontend/.env.*
+!.env.example
+!frontend/.env.example
+
+# ─── OS & Editor ──────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
