@@ -7,6 +7,44 @@ import CreateScenarioModal from '@/components/CreateScenarioModal'
 
 export default function EnterpriseMaritimeLandingPage() {
   const [createScenarioOpen, setCreateScenarioOpen] = useState(false)
+  const [telemetryData, setTelemetryData] = useState({
+    corridor: 'Singapore → Yokohama',
+    vessel: 'FF Horizon (IMO 984210)',
+    eta: '18 Aug · 14:35 UTC',
+    risk: '31.4% (Typhoon Haikui)',
+    reroute: 'Port of Kaohsiung (+4.1h)'
+  })
+
+  React.useEffect(() => {
+    const syncTelemetry = () => {
+      if (typeof window === 'undefined') return
+      const inputStr = sessionStorage.getItem('flowforge_scenario_input')
+      const resStr = sessionStorage.getItem('flowforge_analysis_result')
+      if (inputStr) {
+        try {
+          const inp = JSON.parse(inputStr)
+          let riskVal = '31.4% (Typhoon Alert)'
+          if (resStr) {
+            try {
+              const res = JSON.parse(resStr)
+              const p = res?.predictions?.disruption?.disruption_probability
+              if (p) riskVal = `${(p * 100).toFixed(1)}% Exposure`
+            } catch {}
+          }
+          setTelemetryData({
+            corridor: `${inp.origin_unlocode || 'Singapore'} → ${inp.destination_unlocode || 'Yokohama'}`,
+            vessel: inp.vessel_name || 'FF Horizon (IMO 984210)',
+            eta: inp.baseline_eta || '18 Aug · 14:35 UTC',
+            risk: riskVal,
+            reroute: `Optimal Diversion (${inp.destination_unlocode || 'Port'})`
+          })
+        } catch {}
+      }
+    }
+    syncTelemetry()
+    window.addEventListener('flowforge_analysis_updated', syncTelemetry)
+    return () => window.removeEventListener('flowforge_analysis_updated', syncTelemetry)
+  }, [])
 
   return (
     <div className="min-h-screen bg-[#F6F6F3] text-[#151719] font-sans antialiased selection:bg-[#D94E28] selection:text-white">
@@ -67,11 +105,11 @@ export default function EnterpriseMaritimeLandingPage() {
 
               <div className="space-y-4 text-xs font-sans">
                 {[
-                  { label: 'Corridor', value: 'Singapore → Yokohama', valCls: 'font-bold text-[#151719]' },
-                  { label: 'Tracked Vessel', value: 'FF Horizon (IMO 984210)', valCls: 'font-bold text-[#D94E28]' },
-                  { label: 'Target ETA', value: '18 Aug · 14:35 UTC', valCls: 'font-bold text-[#151719]' },
-                  { label: 'Disruption Risk', value: '31.4% (Typhoon Haikui)', valCls: 'font-bold text-amber-800 bg-amber-50 border border-amber-300 px-2 py-0.5 rounded font-mono' },
-                  { label: 'Optimal Reroute', value: 'Port of Kaohsiung (+4.1h)', valCls: 'font-bold text-emerald-800' },
+                  { label: 'Corridor', value: telemetryData.corridor, valCls: 'font-bold text-[#151719]' },
+                  { label: 'Tracked Vessel', value: telemetryData.vessel, valCls: 'font-bold text-[#D94E28]' },
+                  { label: 'Target ETA', value: telemetryData.eta, valCls: 'font-bold text-[#151719]' },
+                  { label: 'Disruption Risk', value: telemetryData.risk, valCls: 'font-bold text-amber-800 bg-amber-50 border border-amber-300 px-2 py-0.5 rounded font-mono' },
+                  { label: 'Optimal Reroute', value: telemetryData.reroute, valCls: 'font-bold text-emerald-800' },
                 ].map(({ label, value, valCls }) => (
                   <div key={label} className="flex justify-between items-center border-b border-stone-100 pb-3 last:border-0 last:pb-0">
                     <span className="text-stone-500 font-medium">{label}:</span>
