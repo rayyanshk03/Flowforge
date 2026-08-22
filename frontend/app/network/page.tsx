@@ -54,10 +54,68 @@ const REROUTE_OPTIONS = [
 export default function NetworkPage() {
   const [lastUpdated, setLastUpdated] = useState<string>('')
   const [backendStatus, setBackendStatus] = useState<'CONNECTED' | 'DISCONNECTED'>('DISCONNECTED')
-  const [activeReroute, setActiveReroute] = useState('A')  // shared by map + cards
+  const [activeReroute, setActiveReroute] = useState('A')
+
+  // Dynamic Scenario State
+  const [scenarioState, setScenarioState] = useState({
+    originPort: 'Singapore Tuas Hub (SG)',
+    originShort: 'Singapore',
+    destPort: 'Port of Yokohama (JP)',
+    destShort: 'Yokohama',
+    vessel: 'FF Horizon (984210)',
+    baselineEta: 'Aug 22 · 08:14 UTC',
+    riskPct: '31.4%',
+    savings: '+$4,688',
+    recommendedPort: 'Via Kaohsiung (ALT-A)'
+  })
 
   useEffect(() => {
     setLastUpdated(new Date().toLocaleTimeString())
+
+    const syncScenario = () => {
+      if (typeof window === 'undefined') return
+      const inputStr = sessionStorage.getItem('flowforge_scenario_input')
+      const resStr = sessionStorage.getItem('flowforge_analysis_result')
+
+      if (inputStr) {
+        try {
+          const inp = JSON.parse(inputStr)
+          const orig = inp.origin_unlocode || 'Singapore'
+          const dest = inp.destination_unlocode || 'Yokohama'
+
+          let riskVal = '31.4%'
+          let savingsVal = '+$4,688'
+
+          if (resStr) {
+            try {
+              const res = JSON.parse(resStr)
+              const p = res?.predictions?.disruption?.disruption_probability
+              if (p) riskVal = `${(p * 100).toFixed(1)}%`
+
+              const sav = res?.predictions?.cost?.net_financial_savings_usd?.value
+              if (sav) savingsVal = `+$${Math.round(sav).toLocaleString()}`
+            } catch {}
+          }
+
+          setScenarioState({
+            originPort: orig.includes('(') ? orig : `${orig} Terminal`,
+            originShort: orig,
+            destPort: dest.includes('(') ? dest : `Port of ${dest}`,
+            destShort: dest,
+            vessel: inp.vessel_name || 'FF Horizon (984210)',
+            baselineEta: inp.baseline_eta || 'Aug 22 · 08:14 UTC',
+            riskPct: riskVal,
+            savings: savingsVal,
+            recommendedPort: `Via Diversion (${dest})`
+          })
+        } catch {}
+      }
+    }
+
+    syncScenario()
+    window.addEventListener('flowforge_analysis_updated', syncScenario)
+    window.addEventListener('storage', syncScenario)
+
     async function fetchBackend() {
       try {
         const res = await fetch('http://localhost:8000/health')
@@ -66,7 +124,11 @@ export default function NetworkPage() {
     }
     fetchBackend()
     const timer = setInterval(() => setLastUpdated(new Date().toLocaleTimeString()), 30000)
-    return () => clearInterval(timer)
+    return () => {
+      window.removeEventListener('flowforge_analysis_updated', syncScenario)
+      window.removeEventListener('storage', syncScenario)
+      clearInterval(timer)
+    }
   }, [])
 
   return (
@@ -79,30 +141,30 @@ export default function NetworkPage() {
         <div className="border-b border-stone-200 pb-4 space-y-0.5">
           <p className="text-[11px] font-semibold text-stone-400 uppercase tracking-widest">Route Intelligence</p>
           <h1 className="text-2xl md:text-3xl font-extrabold text-stone-900 tracking-tight">
-            Singapore → Yokohama Corridor
+            {scenarioState.originShort} → {scenarioState.destShort} Corridor
           </h1>
           <p className="text-sm text-stone-500">
-            Active disruption detected. 3 reroute options evaluated. Best route recommended below.
+            Active operational analysis. 3 reroute options calculated by ML model. Best route recommended below.
           </p>
         </div>
 
         {/* Stats Strip */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
           <div className="rounded-xl border border-stone-200 bg-white p-4 space-y-0.5">
-            <span className="text-stone-400 font-medium block">Vessel</span>
-            <strong className="text-[#D94E28] font-bold text-sm">FF Horizon (984210)</strong>
+            <span className="text-stone-400 font-medium block">Tracked Vessel</span>
+            <strong className="text-[#D94E28] font-bold text-sm">{scenarioState.vessel}</strong>
           </div>
           <div className="rounded-xl border border-stone-200 bg-white p-4 space-y-0.5">
             <span className="text-stone-400 font-medium block">Baseline ETA</span>
-            <strong className="text-stone-900 font-bold text-sm">Aug 22 · 08:14 UTC</strong>
+            <strong className="text-stone-900 font-bold text-sm">{scenarioState.baselineEta}</strong>
           </div>
           <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-0.5">
             <span className="text-amber-700 font-medium block">Disruption Risk</span>
-            <strong className="text-amber-800 font-bold text-sm">31.4% — Typhoon Haikui</strong>
+            <strong className="text-amber-800 font-bold text-sm">{scenarioState.riskPct} Exposure</strong>
           </div>
           <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 space-y-0.5">
             <span className="text-emerald-700 font-medium block">Recommended Reroute</span>
-            <strong className="text-emerald-800 font-bold text-sm">Via Kaohsiung (ALT-A)</strong>
+            <strong className="text-emerald-800 font-bold text-sm">{scenarioState.recommendedPort}</strong>
           </div>
         </div>
 
@@ -115,13 +177,13 @@ export default function NetworkPage() {
               <div className="flex items-center gap-2">
                 <Globe2 className="size-4 text-[#D94E28]" />
                 <span className="text-sm font-bold text-stone-900">Live Route Map</span>
-                <span className="text-[11px] font-semibold text-stone-400">Singapore → Yokohama</span>
+                <span className="text-[11px] font-semibold text-stone-400">{scenarioState.originShort} → {scenarioState.destShort}</span>
               </div>
               <span className="text-[11px] text-stone-400">Updated {lastUpdated}</span>
             </div>
             <GlobalMap
-              originPort="Singapore Tuas Hub (SG)"
-              destinationPort="Port of Yokohama (JP)"
+              originPort={scenarioState.originPort}
+              destinationPort={scenarioState.destPort}
               activeReroute={activeReroute}
               onRerouteChange={setActiveReroute}
             />
