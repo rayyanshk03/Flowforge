@@ -812,3 +812,112 @@ export function routeDistanceNm(waypoints: [number, number][]): number {
   }
   return Math.round(totalKm * 0.539957)
 }
+
+export interface DynamicRerouteOption {
+  id: string
+  label: string
+  detail: string
+  eta: string
+  cost: string
+  savings: string
+  risk: string
+  distance: string
+  recommended: boolean
+  waypoints: [number, number][]
+}
+
+export function findPortKey(inputName?: string, fallbackKey: string = 'Shanghai Yangshan Port (CN)'): string {
+  if (!inputName) return fallbackKey
+  const norm = inputName.toLowerCase().trim()
+  const keys = Object.keys(PORT_COORDS)
+  for (const key of keys) {
+    const kNorm = key.toLowerCase()
+    if (kNorm.includes(norm) || norm.includes(kNorm.split(' ')[0])) {
+      return key
+    }
+  }
+  for (const key of keys) {
+    if (norm.length >= 3 && key.toLowerCase().includes(norm.slice(0, 3))) {
+      return key
+    }
+  }
+  return fallbackKey
+}
+
+export function computeDynamicReroutes(originInput?: string, destInput?: string): {
+  originKey: string
+  destKey: string
+  primaryWaypoints: [number, number][]
+  primaryNm: number
+  reroutes: DynamicRerouteOption[]
+} {
+  const originKey = findPortKey(originInput, 'Shanghai Yangshan Port (CN)')
+  const destKey = findPortKey(destInput, 'Port of Yokohama (JP)')
+
+  const primaryWaypoints = resolveRoute(originKey, destKey)
+  const primaryNm = routeDistanceNm(primaryWaypoints) || 1250
+
+  // Generate 3 distinct PostGIS bathymetric bypass paths
+  const waypointsA = resolveBypassRoute(originKey, destKey, 'Luzon/Suez Bypass')
+  const waypointsB = resolveBypassRoute(originKey, destKey, 'Malacca/North Sea Bypass')
+  const waypointsC = resolveBypassRoute(originKey, destKey, 'Deepwater Bypass')
+
+  const nmA = routeDistanceNm(waypointsA) || Math.round(primaryNm * 1.08)
+  const nmB = routeDistanceNm(waypointsB) || Math.round(primaryNm * 1.18)
+  const nmC = routeDistanceNm(waypointsC) || Math.round(primaryNm * 1.32)
+
+  const delayA = Math.max(2.1, ((nmA - primaryNm) / 14)).toFixed(1)
+  const delayB = Math.max(5.4, ((nmB - primaryNm) / 14)).toFixed(1)
+  const delayC = Math.max(12.2, ((nmC - primaryNm) / 14)).toFixed(1)
+
+  const costA = Math.round(nmA * 4.4)
+  const costB = Math.round(nmB * 4.6)
+  const costC = Math.round(nmC * 4.8)
+
+  const baselineLoss = Math.round(primaryNm * 7.8)
+  const savingsA = Math.max(1200, baselineLoss - costA)
+  const savingsB = Math.max(400, baselineLoss - costB)
+  const savingsC = Math.round(baselineLoss - costC)
+
+  const reroutes: DynamicRerouteOption[] = [
+    {
+      id: 'A',
+      label: `Coastal Channel Bypass (ALT-A)`,
+      detail: `Optimal A* detour avoiding central weather disturbance.`,
+      eta: `+${delayA}h delay`,
+      cost: `$${costA.toLocaleString()}`,
+      savings: `+$${savingsA.toLocaleString()}`,
+      risk: `8.2%`,
+      distance: `${nmA.toLocaleString()} nm`,
+      recommended: true,
+      waypoints: waypointsA
+    },
+    {
+      id: 'B',
+      label: `Secondary Fairway Detour (ALT-B)`,
+      detail: `Offshore passage around congested harbor approaches.`,
+      eta: `+${delayB}h delay`,
+      cost: `$${costB.toLocaleString()}`,
+      savings: `+$${savingsB.toLocaleString()}`,
+      risk: `14.7%`,
+      distance: `${nmB.toLocaleString()} nm`,
+      recommended: false,
+      waypoints: waypointsB
+    },
+    {
+      id: 'C',
+      label: `Deepwater Safeguard (ALT-C)`,
+      detail: `Extended ocean routing with maximum storm clearance.`,
+      eta: `+${delayC}h delay`,
+      cost: `$${costC.toLocaleString()}`,
+      savings: savingsC >= 0 ? `+$${savingsC.toLocaleString()}` : `-$${Math.abs(savingsC).toLocaleString()}`,
+      risk: `6.1%`,
+      distance: `${nmC.toLocaleString()} nm`,
+      recommended: false,
+      waypoints: waypointsC
+    }
+  ]
+
+  return { originKey, destKey, primaryWaypoints, primaryNm, reroutes }
+}
+

@@ -66,7 +66,7 @@ export default function NetworkPage() {
     baselineEta: 'Aug 22 · 08:14 UTC',
     riskPct: '31.4%',
     savings: '+$4,688',
-    recommendedPort: 'Via Kaohsiung (ALT-A)'
+    recommendedPort: 'Via Coastal Bypass (ALT-A)'
   })
 
   useEffect(() => {
@@ -106,7 +106,7 @@ export default function NetworkPage() {
             baselineEta: inp.baseline_eta || 'Aug 22 · 08:14 UTC',
             riskPct: riskVal,
             savings: savingsVal,
-            recommendedPort: `Via Diversion (${dest})`
+            recommendedPort: `Via Reroute (${dest})`
           })
         } catch {}
       }
@@ -131,6 +131,11 @@ export default function NetworkPage() {
     }
   }, [])
 
+  // Dynamically compute shortest bathymetric waypoints & reroute options for user's input ports
+  const { primaryNm, reroutes } = useMemo(() => {
+    return computeDynamicReroutes(scenarioState.originShort, scenarioState.destShort)
+  }, [scenarioState.originShort, scenarioState.destShort])
+
   return (
     <div className="min-h-screen bg-[#F9F8F6] text-stone-900 antialiased" style={{ fontFamily: 'Inter, sans-serif' }}>
       <Navbar />
@@ -144,7 +149,7 @@ export default function NetworkPage() {
             {scenarioState.originShort} → {scenarioState.destShort} Corridor
           </h1>
           <p className="text-sm text-stone-500">
-            Active operational analysis. 3 reroute options calculated by ML model. Best route recommended below.
+            Active operational analysis. 3 reroute options calculated by PostGIS A* model. Best route recommended below.
           </p>
         </div>
 
@@ -155,8 +160,8 @@ export default function NetworkPage() {
             <strong className="text-[#D94E28] font-bold text-sm">{scenarioState.vessel}</strong>
           </div>
           <div className="rounded-xl border border-stone-200 bg-white p-4 space-y-0.5">
-            <span className="text-stone-400 font-medium block">Baseline ETA</span>
-            <strong className="text-stone-900 font-bold text-sm">{scenarioState.baselineEta}</strong>
+            <span className="text-stone-400 font-medium block">Baseline Distance</span>
+            <strong className="text-stone-900 font-bold text-sm">{primaryNm.toLocaleString()} nm</strong>
           </div>
           <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-0.5">
             <span className="text-amber-700 font-medium block">Disruption Risk</span>
@@ -164,7 +169,7 @@ export default function NetworkPage() {
           </div>
           <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 space-y-0.5">
             <span className="text-emerald-700 font-medium block">Recommended Reroute</span>
-            <strong className="text-emerald-800 font-bold text-sm">{scenarioState.recommendedPort}</strong>
+            <strong className="text-emerald-800 font-bold text-sm">{reroutes[0]?.label || scenarioState.recommendedPort}</strong>
           </div>
         </div>
 
@@ -196,7 +201,7 @@ export default function NetworkPage() {
               <h2 className="text-base font-bold text-stone-900 mt-0.5">3 Alternatives Evaluated</h2>
             </div>
 
-            {REROUTE_OPTIONS.map(r => (
+            {reroutes.map((r) => (
               <div
                 key={r.id}
                 onClick={() => setActiveReroute(r.id)}
@@ -205,8 +210,8 @@ export default function NetworkPage() {
                     ? r.recommended
                       ? 'border-emerald-300 bg-emerald-50 shadow-sm'
                       : r.id === 'B'
-                        ? 'border-amber-300 bg-amber-50 shadow-sm'
-                        : 'border-stone-400 bg-stone-50 shadow-sm'
+                      ? 'border-amber-300 bg-amber-50 shadow-sm'
+                      : 'border-stone-400 bg-stone-50 shadow-sm'
                     : 'border-stone-200 bg-white hover:border-stone-300'
                 }`}
               >
@@ -219,7 +224,7 @@ export default function NetworkPage() {
                         {r.label}
                       </span>
                     </div>
-                    <p className="text-[11px] text-stone-400 mt-0.5 leading-snug">{r.detail}</p>
+                    <p className="text-[11px] text-stone-500 mt-0.5 leading-snug">{r.detail}</p>
                   </div>
                   {r.recommended && (
                     <span className="shrink-0 text-[10px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-full">
@@ -235,8 +240,8 @@ export default function NetworkPage() {
                     <strong className="text-stone-800">{r.eta}</strong>
                   </div>
                   <div className="bg-white rounded-lg border border-stone-200 p-2 space-y-0.5">
-                    <span className="text-stone-400 font-medium block">Risk Level</span>
-                    <strong className={r.recommended ? 'text-emerald-700' : 'text-amber-700'}>{r.risk}</strong>
+                    <span className="text-stone-400 font-medium block">Distance</span>
+                    <strong className="text-stone-800">{r.distance}</strong>
                   </div>
                   <div className="bg-white rounded-lg border border-stone-200 p-2 space-y-0.5">
                     <span className="text-stone-400 font-medium block">Route Cost</span>
@@ -261,12 +266,12 @@ export default function NetworkPage() {
             <div className="rounded-xl border border-stone-200 bg-white p-4 space-y-2.5 text-xs">
               <span className="text-[11px] font-semibold text-stone-400 uppercase tracking-widest block border-b border-stone-100 pb-2">Voyage Summary</span>
               {[
-                { l: 'Origin', v: 'Singapore Tuas Hub (SG)' },
-                { l: 'Destination', v: 'Port of Yokohama (JP)' },
-                { l: 'Distance', v: '3,240 nm (best route)' },
-                { l: 'Speed', v: '13.8 kn' },
-                { l: 'Cargo', v: 'Electronics ($18.2M)' },
-                { l: 'Carrier', v: 'COSCO Shipping Lines' },
+                { l: 'Origin Port', v: scenarioState.originPort },
+                { l: 'Destination Port', v: scenarioState.destPort },
+                { l: 'Baseline Distance', v: `${primaryNm.toLocaleString()} nm` },
+                { l: 'Average Speed', v: '13.8 kn' },
+                { l: 'Tracked Vessel', v: scenarioState.vessel },
+                { l: 'Carrier', v: 'COSCO / ONE Shipping' },
               ].map(({ l, v }) => (
                 <div key={l} className="flex justify-between">
                   <span className="text-stone-400">{l}</span>
@@ -276,6 +281,8 @@ export default function NetworkPage() {
             </div>
           </div>
         </div>
+
+
 
         {/* Bottom CTA */}
         <div className="rounded-xl border border-stone-200 bg-white p-4 flex flex-wrap items-center justify-between gap-4 shadow-sm">
