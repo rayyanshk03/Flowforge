@@ -32,9 +32,19 @@ import {
   Wifi,
   X
 } from 'lucide-react'
+import dynamic from 'next/dynamic'
 import DecisionHistoryDrawer from '@/components/DecisionHistoryDrawer'
 import SystemSettingsModal from '@/components/SystemSettingsModal'
 import CreateScenarioModal from '@/components/CreateScenarioModal'
+
+const GlobalMap = dynamic(() => import('@/components/GlobalMap'), {
+  ssr: false,
+  loading: () => (
+    <div className="h-[520px] w-full rounded-2xl bg-stone-900 border border-stone-300 flex items-center justify-center text-stone-400 font-sans text-xs">
+      Loading Interactive Maritime Map Engine...
+    </div>
+  )
+})
 
 // Asset types definition
 type AssetKey = 'ROTTERDAM' | 'MUMBAI' | 'SINGAPORE' | 'ANTWERP' | 'COLOMBO' | 'DUBAI' | 'SHANGHAI' | 'ROUTE_PRIMARY'
@@ -445,112 +455,16 @@ export default function NetworkPage() {
           {/* Main Visual workspace (Map or Network View) */}
           <div className="rounded-lg border-2 border-stone-300 bg-[#F4F2EC] p-6 shadow-md space-y-4 relative min-h-[560px] flex flex-col justify-between">
             {viewMode === 'MAP' ? (
-              /* MAP VIEW: SVG Global Corridor Canvas */
-              <div className="relative size-full min-h-[480px] space-y-4">
-                <div className="flex items-center justify-between border-b border-stone-300 pb-3 text-xs font-mono font-black text-stone-900">
+              /* MAP VIEW: Interactive Bathymetric Global Map */
+              <div className="relative size-full space-y-3">
+                <div className="flex items-center justify-between border-b border-stone-200 pb-2.5 text-xs font-sans font-bold text-stone-900">
                   <span className="flex items-center gap-2">
                     <Globe2 className="size-4 text-[#D94E28]" /> GLOBAL MARITIME DIGITAL TWIN
                   </span>
-                  <span className="text-[10px] text-stone-500">CLICK ANY PORT OR ROUTE TO INSPECT</span>
+                  <span className="text-[11px] font-medium text-stone-500">INTERACTIVE BATHYMETRIC ROUTE MAP</span>
                 </div>
 
-                {/* SVG Visual Canvas */}
-                <div className="relative h-[400px] w-full rounded border border-stone-300 bg-white p-4 overflow-hidden">
-                  <svg className="size-full" viewBox="0 0 900 400" aria-label="Global Logistics Map">
-                    {/* Subtle latitude lines */}
-                    <line x1="0" y1="100" x2="900" y2="100" stroke="#E5E7EB" strokeWidth="1" strokeDasharray="4 4" />
-                    <line x1="0" y1="200" x2="900" y2="200" stroke="#E5E7EB" strokeWidth="1" strokeDasharray="4 4" />
-                    <line x1="0" y1="300" x2="900" y2="300" stroke="#E5E7EB" strokeWidth="1" strokeDasharray="4 4" />
-
-                    {/* Primary Route: Mumbai (280,240) -> Singapore (540,260) -> Rotterdam (420,110) */}
-                    {layers.routes && (
-                      <>
-                        {/* Primary Route (Red Alert Segment to Rotterdam) */}
-                        <path
-                          d="M 280 240 Q 400 270 540 260 T 420 110"
-                          fill="none"
-                          stroke="#B91C1C"
-                          strokeWidth="3"
-                          strokeDasharray="6 4"
-                          className="animate-pulse cursor-pointer"
-                          onClick={() => setSelectedAsset('ROUTE_PRIMARY')}
-                        />
-                        {/* Alternative Route: Mumbai (280,240) -> Colombo (340,270) -> Antwerp (390,115) */}
-                        <path
-                          d="M 280 240 Q 310 270 340 270 T 390 115"
-                          fill="none"
-                          stroke="#047857"
-                          strokeWidth="2.5"
-                          strokeDasharray="4 4"
-                        />
-                      </>
-                    )}
-
-                    {/* Rotterdam Disruption Zone Ring */}
-                    {layers.disruptions && (
-                      <circle cx="420" cy="110" r="28" fill="#991B1B" fillOpacity="0.15" stroke="#B91C1C" strokeWidth="1.5" className="animate-ping" />
-                    )}
-
-                    {/* Port Markers */}
-                    {/* Mumbai */}
-                    <g transform="translate(280, 240)" className="cursor-pointer" onClick={() => setSelectedAsset('MUMBAI')}>
-                      <circle r="7" fill="#151719" />
-                      <text x="12" y="4" fontSize="10" fontWeight="bold" fontFamily="monospace" fill="#151719">
-                        MUMBAI (INNSA)
-                      </text>
-                    </g>
-
-                    {/* Singapore */}
-                    <g transform="translate(540, 260)" className="cursor-pointer" onClick={() => setSelectedAsset('SINGAPORE')}>
-                      <circle r="7" fill="#D97706" />
-                      <text x="12" y="4" fontSize="10" fontWeight="bold" fontFamily="monospace" fill="#151719">
-                        SINGAPORE (SGSIN)
-                      </text>
-                    </g>
-
-                    {/* Rotterdam (CRITICAL) */}
-                    <g transform="translate(420, 110)" className="cursor-pointer" onClick={() => setSelectedAsset('ROTTERDAM')}>
-                      <circle r="9" fill="#B91C1C" />
-                      <text x="14" y="4" fontSize="11" fontWeight="900" fontFamily="monospace" fill="#991B1B">
-                        ROTTERDAM (NLRTM) - 87% CRITICAL
-                      </text>
-                    </g>
-
-                    {/* Antwerp (Alternative) */}
-                    <g transform="translate(390, 115)" className="cursor-pointer" onClick={() => setSelectedAsset('ANTWERP')}>
-                      <circle r="6" fill="#047857" />
-                      <text x="-110" y="4" fontSize="10" fontWeight="bold" fontFamily="monospace" fill="#047857">
-                        ANTWERP (BEANR)
-                      </text>
-                    </g>
-
-                    {/* Colombo */}
-                    <g transform="translate(340, 270)" className="cursor-pointer" onClick={() => setSelectedAsset('COLOMBO')}>
-                      <circle r="5" fill="#047857" />
-                      <text x="10" y="12" fontSize="9" fontWeight="bold" fontFamily="monospace" fill="#555">
-                        COLOMBO (LKCMB)
-                      </text>
-                    </g>
-
-                    {/* Dubai */}
-                    <g transform="translate(240, 200)" className="cursor-pointer" onClick={() => setSelectedAsset('DUBAI')}>
-                      <circle r="5" fill="#555" />
-                      <text x="-80" y="-8" fontSize="9" fontWeight="bold" fontFamily="monospace" fill="#555">
-                        DUBAI (AEJEA)
-                      </text>
-                    </g>
-                  </svg>
-
-                  {/* On-Map Legend Bar */}
-                  <div className="absolute bottom-3 left-3 flex items-center gap-4 bg-white/95 border border-stone-300 rounded px-3 py-1.5 text-[9px] font-mono font-bold text-stone-700 shadow-2xs">
-                    <span className="flex items-center gap-1">
-                      <span className="size-2.5 rounded-full bg-[#B91C1C]" /> Primary Disrupted Route
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <span className="size-2.5 rounded-full bg-[#047857]" /> Alternative Route
-                    </span>
-                  </div>
-                </div>
+                <GlobalMap />
               </div>
             ) : (
               /* SECTION 6: NETWORK VIEW (Node Graph Dependency View) */
