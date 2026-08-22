@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 
 import Navbar from '@/components/Navbar'
+import DisruptionCenterPanel from '@/components/DisruptionCenterPanel'
 
 // Realistic Port Examples
 const REALISTIC_PORTS = [
@@ -178,15 +179,18 @@ export default function OperationalIntelligencePage() {
         <div className="space-y-2 border-b border-stone-300 pb-5">
           <div className="inline-flex items-center gap-2 rounded border border-stone-300 bg-white px-3 py-1 text-xs font-mono font-bold text-[#D94E28] shadow-xs">
             <span className="size-2 rounded-full bg-[#D94E28] animate-pulse" />
-            PAGE 02 · SHIPMENT ANALYSIS & OPERATIONAL INTELLIGENCE
+            DISRUPTION INTELLIGENCE CENTER &amp; OPERATIONAL ANALYSIS
           </div>
           <h1 className="text-3xl md:text-5xl font-extrabold text-[#151719] tracking-tight">
-            Operational Intelligence
+            Disruption Intelligence
           </h1>
           <p className="text-sm text-stone-600 font-normal max-w-2xl leading-relaxed">
-            Establish the current state of the shipment before evaluating alternative decisions.
+            Real-time threat detection, active network disruption monitoring, and automated response plan generation.
           </p>
         </div>
+
+        {/* DEDICATED DISRUPTION INTELLIGENCE CENTER PANEL */}
+        <DisruptionCenterPanel />
 
         {/* TWO-COLUMN LAYOUT: LEFT (INPUT) | RIGHT (LIVE INTELLIGENCE) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
