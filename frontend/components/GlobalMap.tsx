@@ -2,27 +2,11 @@
 
 import React, { useEffect, useRef } from 'react'
 import 'leaflet/dist/leaflet.css'
-import { PORT_COORDS, resolveRoute, resolveBypassRoute } from '@/lib/routeEngine'
-
-// Helper function: Match user input string (e.g. 'Mumbai', 'Rotterdam') to exact PORT_COORDS key
-function findPortKey(inputName?: string, fallbackKey: string = 'Shanghai Yangshan Port (CN)'): string {
-  if (!inputName) return fallbackKey
-  const norm = inputName.toLowerCase().trim()
-  const keys = Object.keys(PORT_COORDS)
-  for (const key of keys) {
-    const kNorm = key.toLowerCase()
-    if (kNorm.includes(norm) || norm.includes(kNorm.split(' ')[0])) {
-      return key
-    }
-  }
-  // Try partial country / city match
-  for (const key of keys) {
-    if (norm.slice(0, 4).length >= 3 && key.toLowerCase().includes(norm.slice(0, 4))) {
-      return key
-    }
-  }
-  return fallbackKey
-}
+import {
+  PORT_COORDS,
+  computeDynamicReroutes,
+  findPortKey
+} from '@/lib/routeEngine'
 
 // Calculate vessel position and heading along waypoint path
 function getInterpolatedVesselPosition(waypoints: [number, number][], t: number) {
@@ -95,55 +79,13 @@ export default function GlobalMap({
   const mapInstanceRef = useRef<any>(null)
   const layerGroupRef = useRef<any>(null)
 
-  // Dynamically resolve exact PostGIS NavMesh keys
-  const actualOriginKey = findPortKey(originPort, 'Shanghai Yangshan Port (CN)')
-  const actualDestKey = findPortKey(destinationPort, 'Port of Yokohama (JP)')
+  // Dynamically compute primary route and all valid open-water reroute options via PostGIS A* model
+  const { originKey: actualOriginKey, destKey: actualDestKey, primaryWaypoints, reroutes } = computeDynamicReroutes(
+    originPort,
+    destinationPort
+  )
 
-  // Dynamically compute primary route via Dijkstra / A* shortest bathymetric path algorithm
-  const primaryWaypoints = resolveRoute(actualOriginKey, actualDestKey)
-
-  // Dynamically compute 3 PostGIS NavMesh alternate routes
-  const rerouteA_waypoints = resolveBypassRoute(actualOriginKey, actualDestKey, 'Coastal Channel Diversion')
-  const rerouteB_waypoints = resolveBypassRoute(actualOriginKey, actualDestKey, 'Weather Bypass Route')
-  const rerouteC_waypoints = resolveBypassRoute(actualOriginKey, actualDestKey, 'Deepwater Ocean Bypass')
-
-  const rerouteOptions = [
-    {
-      id: 'A',
-      label: 'Recommended Reroute (ALT-A)',
-      eta: '+4.1h delay',
-      cost: '$14,200',
-      savings: '+$4,688 vs. baseline',
-      risk: '8.2%',
-      recommended: true,
-      color: '#10B981',
-      waypoints: rerouteA_waypoints
-    },
-    {
-      id: 'B',
-      label: 'Secondary Bypass (ALT-B)',
-      eta: '+9.3h delay',
-      cost: '$16,880',
-      savings: '+$2,008 vs. baseline',
-      risk: '14.7%',
-      recommended: false,
-      color: '#F59E0B',
-      waypoints: rerouteB_waypoints
-    },
-    {
-      id: 'C',
-      label: 'Deepwater Safeguard (ALT-C)',
-      eta: '+16.2h delay',
-      cost: '$19,440',
-      savings: '-$1,552 vs. baseline',
-      risk: '6.1%',
-      recommended: false,
-      color: '#6B7280',
-      waypoints: rerouteC_waypoints
-    }
-  ]
-
-  const selectedReroute = rerouteOptions.find((r) => r.id === activeReroute) || rerouteOptions[0]
+  const selectedReroute = reroutes.find((r) => r.id === activeReroute) || reroutes[0]
 
   useEffect(() => {
     if (typeof window === 'undefined' || !mapContainerRef.current) return
@@ -189,8 +131,8 @@ export default function GlobalMap({
         }).addTo(group)
       }
 
-      // 2. Render all 3 PostGIS shortest-distance alternate routes
-      rerouteOptions.forEach((r) => {
+      // 2. Render all valid 100% open-water alternate routes
+      reroutes.forEach((r) => {
         if (!r.waypoints || r.waypoints.length < 2) return
         const isSelected = r.id === activeReroute
         const routeColor = r.id === 'A' ? '#10B981' : r.id === 'B' ? '#F59E0B' : '#3B82F6'
@@ -226,7 +168,7 @@ export default function GlobalMap({
       destMarker.bindTooltip(`Destination: ${actualDestKey}`, { permanent: false })
 
       // 5. Waypoint marker on selected reroute
-      if (selectedReroute.waypoints.length > 3) {
+      if (selectedReroute && selectedReroute.waypoints.length > 3) {
         const mid = selectedReroute.waypoints[Math.floor(selectedReroute.waypoints.length / 2)]
         const color = selectedReroute.recommended ? '#10B981' : '#F59E0B'
         L.circleMarker(mid, {
@@ -235,7 +177,9 @@ export default function GlobalMap({
           color: '#FFFFFF',
           weight: 1.5,
           fillOpacity: 0.9
-        }).addTo(group).bindTooltip(`WayPoint: ${selectedReroute.label}`, { permanent: false })
+        })
+          .addTo(group)
+          .bindTooltip(`WayPoint: ${selectedReroute.label}`, { permanent: false })
       }
 
       // 6. Active Movable Vessel Marker
@@ -258,7 +202,7 @@ export default function GlobalMap({
       // 7. Auto Fit Bounds to dynamically calculated bathymetric paths
       if (primary.length > 1) {
         const bounds = L.latLngBounds(primary)
-        rerouteOptions.forEach((r) => r.waypoints.forEach((pt) => bounds.extend(pt)))
+        reroutes.forEach((r) => r.waypoints.forEach((pt) => bounds.extend(pt)))
         map.fitBounds(bounds, { padding: [50, 50], maxZoom: 7 })
       }
     })
@@ -266,7 +210,7 @@ export default function GlobalMap({
     return () => {
       mounted = false
     }
-  }, [activeReroute, actualOriginKey, actualDestKey])
+  }, [activeReroute, actualOriginKey, actualDestKey, primaryWaypoints, reroutes, selectedReroute])
 
   return (
     <div className="relative w-full h-[520px] bg-[#F6F6F3] rounded-2xl overflow-hidden shadow-xs border border-stone-300 font-sans">
@@ -277,7 +221,7 @@ export default function GlobalMap({
         <span className="text-[10px] font-mono font-bold text-stone-500 uppercase tracking-widest shrink-0">
           POSTGIS A* ROUTE SELECTOR:
         </span>
-        {rerouteOptions.map((r) => (
+        {reroutes.map((r) => (
           <button
             key={r.id}
             onClick={() => onRerouteChange?.(r.id)}
@@ -287,7 +231,7 @@ export default function GlobalMap({
                   ? 'bg-emerald-50 border-emerald-300 text-emerald-900 shadow-2xs'
                   : r.id === 'B'
                   ? 'bg-amber-50 border-amber-300 text-amber-900 shadow-2xs'
-                  : 'bg-stone-100 border-stone-400 text-stone-900 shadow-2xs'
+                  : 'bg-blue-50 border-blue-300 text-blue-900 shadow-2xs'
                 : 'bg-white border-stone-300 text-stone-600 hover:border-stone-400'
             }`}
           >
@@ -300,7 +244,7 @@ export default function GlobalMap({
                       ? '#10B981'
                       : r.id === 'B'
                       ? '#F59E0B'
-                      : '#6B7280'
+                      : '#3B82F6'
                     : '#94A3B8'
               }}
             />
