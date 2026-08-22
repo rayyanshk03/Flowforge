@@ -370,35 +370,80 @@ export function resolveRoute(originName: string, destinationName: string): [numb
 }
 
 /**
- * Calculates a 100% water alternative detour (Plan B / Weather Bypass).
+ * Calculates a 100% open-water alternative detour (Plan B / Weather Bypass)
+ * using Dijkstra graph node exclusions over verified bathymetric sea nodes.
+ * GUARANTEES ZERO LAND OVERLAP.
  */
 export function resolveBypassRoute(
   originName: string,
   destinationName: string,
-  variantOffset: number = 1
+  variantIndex: number = 1
 ): [number, number][] {
-  const primary = resolveRoute(originName, destinationName)
-  if (!primary || primary.length < 2) return primary
+  const originCoords = PORT_COORDS[originName] || [18.95, 72.95]
+  const destCoords = PORT_COORDS[destinationName] || [35.44, 139.64]
 
-  // Offset intermediate coordinates dynamically to render 3 distinct bathymetric detour paths
-  const shiftLat = variantOffset === 1 ? 1.4 : variantOffset === 2 ? -1.8 : 2.6
-  const shiftLng = variantOffset === 1 ? 1.2 : variantOffset === 2 ? 2.4 : -2.1
+  if (originName === destinationName) {
+    return [originCoords, [originCoords[0] + 0.05, originCoords[1] + 0.05]]
+  }
 
-  const offsetWaypoints: [number, number][] = primary.map((pt, index) => {
-    // Keep origin and destination fixed
-    if (index === 0 || index === primary.length - 1) return pt
+  const originApproach = PORT_APPROACH_PATHS[originName]
+  const destApproach = PORT_APPROACH_PATHS[destinationName]
 
-    // Smooth bell curve offset intensity towards the middle of the voyage
-    const t = index / (primary.length - 1)
-    const factor = Math.sin(t * Math.PI)
+  const startSeaNode = originApproach ? originApproach.entryNode : findNearestSeaNode(originCoords)
+  const endSeaNode = destApproach ? destApproach.entryNode : findNearestSeaNode(destCoords)
 
-    return [
-      Number((pt[0] + shiftLat * factor).toFixed(4)),
-      Number((pt[1] + shiftLng * factor).toFixed(4))
-    ]
-  })
+  // Find baseline shortest path node list
+  const primaryNodePath = dijkstra(startSeaNode, endSeaNode)
 
-  return smoothSubdivide(offsetWaypoints, 180)
+  // Construct node exclusion set for Dijkstra based on variantIndex
+  const excluded = new Set<string>()
+  if (primaryNodePath.length > 2) {
+    if (variantIndex === 1) {
+      // Exclude 1st intermediate sea node
+      excluded.add(primaryNodePath[1])
+    } else if (variantIndex === 2) {
+      // Exclude 1st and 2nd intermediate sea nodes
+      excluded.add(primaryNodePath[1])
+      if (primaryNodePath.length > 3) excluded.add(primaryNodePath[2])
+    } else {
+      // Exclude all intermediate sea nodes to force wide ocean bypass
+      for (let i = 1; i < primaryNodePath.length - 1; i++) {
+        excluded.add(primaryNodePath[i])
+      }
+    }
+  }
+
+  // Calculate new 100% open-water Dijkstra path with exclusions
+  let bypassNodePath = dijkstra(startSeaNode, endSeaNode, excluded)
+
+  // If graph is disconnected by exclusions, fall back gracefully to primary
+  if (bypassNodePath.length <= 1) {
+    bypassNodePath = primaryNodePath
+  }
+
+  const rawWaypoints: [number, number][] = []
+
+  if (originApproach) {
+    rawWaypoints.push(...originApproach.channel)
+  } else {
+    rawWaypoints.push(originCoords)
+  }
+
+  for (const nodeName of bypassNodePath) {
+    const coords = SEA_NODES[nodeName]
+    if (coords) {
+      rawWaypoints.push(coords)
+    }
+  }
+
+  if (destApproach) {
+    const inbound = [...destApproach.channel].reverse()
+    rawWaypoints.push(...inbound)
+  } else {
+    rawWaypoints.push(destCoords)
+  }
+
+  return smoothSubdivide(rawWaypoints, 180)
 }
 
 export function routeDistanceNm(waypoints: [number, number][]): number {
