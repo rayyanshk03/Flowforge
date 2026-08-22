@@ -8,6 +8,7 @@ import {
   Clock,
   ShieldCheck
 } from 'lucide-react'
+import { computeDynamicReroutes } from '@/lib/routeEngine'
 
 interface MonteCarloArrivalChartProps {
   originPort?: string
@@ -22,18 +23,11 @@ export default function MonteCarloArrivalChart({
   const [trialCount, setTrialCount] = useState(10000)
   const [progress, setProgress] = useState(100)
 
-  // Calculate baseline expected days based on origin & dest input ports
+  // Calculate baseline expected days dynamically from exact sea distance of origin & dest ports
   const baseDays = useMemo(() => {
-    const orig = (originPort || '').toLowerCase()
-    const dest = (destPort || '').toLowerCase()
-
-    if (orig.includes('shanghai') && dest.includes('yokohama')) return 4
-    if (orig.includes('singapore') && dest.includes('yokohama')) return 8
-    if (orig.includes('shanghai') && dest.includes('singapore')) return 6
-    if (orig.includes('mumbai') && dest.includes('rotterdam')) return 18
-    if (orig.includes('rotterdam') && dest.includes('chittagong')) return 21
-    if (orig.includes('shanghai') || dest.includes('rotterdam') || dest.includes('hamburg')) return 27
-    return 14
+    const { primaryNm } = computeDynamicReroutes(originPort, destPort)
+    const days = Math.max(1, Math.round(primaryNm / (13.8 * 24)))
+    return days
   }, [originPort, destPort])
 
   // Pre-initialize initial distribution state so bars ALWAYS render immediately

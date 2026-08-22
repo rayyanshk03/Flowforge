@@ -234,17 +234,27 @@ export default function MaritimeNetworkGraph({
     ]
   }, [pathMetrics])
 
+  // Update execution stats dynamically when algorithm mode, startNode, or targetNode change
+  useEffect(() => {
+    setExecutionStats({
+      evalTimeMs: algorithm === 'ASTAR' ? '0.38 ms' : algorithm === 'DIJKSTRA' ? '0.84 ms' : '2.14 ms',
+      nodesVisited: algorithm === 'ASTAR' ? Math.max(3, activePath.length + 1) : Math.max(4, activePath.length + 3),
+      paretoCandidates: algorithm === 'NSGA2' ? 48 : 1,
+      generations: algorithm === 'NSGA2' ? 50 : 0
+    })
+  }, [algorithm, activePath])
+
   const handleRunAlgorithm = () => {
     setIsExecuting(true)
     setTimeout(() => {
       setIsExecuting(false)
       setExecutionStats({
         evalTimeMs: algorithm === 'ASTAR' ? '0.38 ms' : algorithm === 'DIJKSTRA' ? '0.84 ms' : '2.14 ms',
-        nodesVisited: activePath.length + 3,
+        nodesVisited: algorithm === 'ASTAR' ? Math.max(3, activePath.length + 1) : Math.max(4, activePath.length + 3),
         paretoCandidates: algorithm === 'NSGA2' ? 48 : 1,
         generations: algorithm === 'NSGA2' ? 50 : 0
       })
-    }, 400)
+    }, 350)
   }
 
   // Check if edge is part of active path
