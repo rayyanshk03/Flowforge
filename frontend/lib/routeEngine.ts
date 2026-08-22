@@ -129,12 +129,12 @@ export const PORT_APPROACH_PATHS: Record<string, { entryNode: string; channel: [
   },
   'Jawaharlal Nehru Port (Mumbai, IN)': {
     entryNode: 'N_ARABIAN_EAST',
-    channel: [[18.95, 72.95], [18.90, 72.75], [18.80, 72.50], [18.60, 72.10]]
+    channel: [[18.95, 72.95], [18.50, 72.50], [17.50, 72.00], [16.00, 71.00]]
   }
 }
 
 // ---------------------------------------------------------------------------
-// 3. Open-Water Maritime Highway Graph (Sea Nodes)
+// 3. Open-Water Maritime Highway Graph (Sea Nodes — 100% Water Clearance)
 // ---------------------------------------------------------------------------
 export const SEA_NODES: Record<string, [number, number]> = {
   // East Asia & Sea of Japan
@@ -155,13 +155,13 @@ export const SEA_NODES: Record<string, [number, number]> = {
   'N_MALACCA_M':           [2.50, 101.80],
   'N_MALACCA_N':           [5.50, 97.50],
   'N_SUNDA_STRAIT':        [-5.90, 105.80],
-  'N_LOMBOK_STRAIT':       [-8.50, 115.70],
 
-  // Indian Ocean & Bay of Bengal
+  // Indian Ocean & Bay of Bengal (Guaranteed open-water route around Sri Lanka)
   'N_ANDAMAN_SEA':         [7.50, 93.50],
   'N_BAY_OF_BENGAL_MID':   [12.00, 86.00],
-  'N_SRI_LANKA_SOUTH':     [5.80, 80.50],
-  'N_ARABIAN_EAST':        [16.00, 71.00],
+  'N_SRI_LANKA_SOUTH':     [5.50, 80.50],        // Strictly south of Dondra Head / Sri Lanka
+  'N_INDIA_SOUTH_WEST':    [7.80, 76.50],        // Strictly off Trivandrum in Arabian Sea
+  'N_ARABIAN_EAST':        [16.00, 71.00],       // Off Mumbai
   'N_ARABIAN_MID':         [15.00, 64.00],
   'N_GULF_OF_OMAN':        [24.50, 58.50],
   'N_BAB_EL_MANDEB':       [12.50, 43.50],
@@ -183,7 +183,7 @@ export const SEA_NODES: Record<string, [number, number]> = {
 }
 
 // ---------------------------------------------------------------------------
-// 4. Graph Connections (Maritime Highway Channels)
+// 4. Graph Connections — Strictly Water Edges (Zero Overland Edges)
 // ---------------------------------------------------------------------------
 const SEA_GRAPH: Record<string, string[]> = {
   'N_JAPAN_SOUTH':         ['N_JAPAN_EAST', 'N_KOREA_STRAIT', 'N_PHILIPPINE_SEA_N', 'N_TAIWAN_STRAIT_N'],
@@ -202,10 +202,13 @@ const SEA_GRAPH: Record<string, string[]> = {
   'N_MALACCA_N':           ['N_MALACCA_M', 'N_ANDAMAN_SEA'],
   'N_SUNDA_STRAIT':        ['N_SCS_SOUTH', 'N_SRI_LANKA_SOUTH'],
   'N_ANDAMAN_SEA':         ['N_MALACCA_N', 'N_BAY_OF_BENGAL_MID', 'N_SRI_LANKA_SOUTH'],
-  'N_BAY_OF_BENGAL_MID':   ['N_ANDAMAN_SEA', 'N_SRI_LANKA_SOUTH', 'N_ARABIAN_EAST'],
-  'N_SRI_LANKA_SOUTH':     ['N_ANDAMAN_SEA', 'N_BAY_OF_BENGAL_MID', 'N_ARABIAN_EAST', 'N_ARABIAN_MID'],
-  'N_ARABIAN_EAST':        ['N_SRI_LANKA_SOUTH', 'N_ARABIAN_MID', 'N_GULF_OF_OMAN'],
-  'N_ARABIAN_MID':         ['N_ARABIAN_EAST', 'N_GULF_OF_OMAN', 'N_BAB_EL_MANDEB'],
+
+  // BAY OF BENGAL & INDIA (Strict open-water routing around India & Sri Lanka)
+  'N_BAY_OF_BENGAL_MID':   ['N_ANDAMAN_SEA', 'N_SRI_LANKA_SOUTH'],
+  'N_SRI_LANKA_SOUTH':     ['N_BAY_OF_BENGAL_MID', 'N_ANDAMAN_SEA', 'N_INDIA_SOUTH_WEST', 'N_ARABIAN_MID'],
+  'N_INDIA_SOUTH_WEST':    ['N_SRI_LANKA_SOUTH', 'N_ARABIAN_EAST'],
+  'N_ARABIAN_EAST':        ['N_INDIA_SOUTH_WEST', 'N_ARABIAN_MID', 'N_GULF_OF_OMAN'],
+  'N_ARABIAN_MID':         ['N_ARABIAN_EAST', 'N_SRI_LANKA_SOUTH', 'N_GULF_OF_OMAN', 'N_BAB_EL_MANDEB'],
   'N_GULF_OF_OMAN':        ['N_ARABIAN_EAST', 'N_ARABIAN_MID'],
   'N_BAB_EL_MANDEB':       ['N_ARABIAN_MID', 'N_RED_SEA_MID'],
   'N_RED_SEA_MID':         ['N_BAB_EL_MANDEB', 'N_SUEZ_SOUTH'],
@@ -222,7 +225,7 @@ const SEA_GRAPH: Record<string, string[]> = {
 }
 
 // ---------------------------------------------------------------------------
-// 5. Haversine Distance & Spatial Helpers
+// 5. Distance & Spatial Helpers
 // ---------------------------------------------------------------------------
 export function haversineDistKm(p1: [number, number], p2: [number, number]): number {
   const R = 6371.0
@@ -399,14 +402,11 @@ export function resolveBypassRoute(
   const excluded = new Set<string>()
   if (primaryNodePath.length > 2) {
     if (variantIndex === 1) {
-      // Exclude 1st intermediate sea node
       excluded.add(primaryNodePath[1])
     } else if (variantIndex === 2) {
-      // Exclude 1st and 2nd intermediate sea nodes
       excluded.add(primaryNodePath[1])
       if (primaryNodePath.length > 3) excluded.add(primaryNodePath[2])
     } else {
-      // Exclude all intermediate sea nodes to force wide ocean bypass
       for (let i = 1; i < primaryNodePath.length - 1; i++) {
         excluded.add(primaryNodePath[i])
       }
@@ -416,7 +416,7 @@ export function resolveBypassRoute(
   // Calculate new 100% open-water Dijkstra path with exclusions
   let bypassNodePath = dijkstra(startSeaNode, endSeaNode, excluded)
 
-  // If graph is disconnected by exclusions, fall back gracefully to primary
+  // If graph is disconnected by exclusions, return primary path
   if (bypassNodePath.length <= 1) {
     bypassNodePath = primaryNodePath
   }
@@ -486,6 +486,13 @@ export function findPortKey(inputName?: string, fallbackKey: string = 'Shanghai 
   return fallbackKey
 }
 
+/**
+ * Checks if two waypoint paths are substantially different (distance diff > 40 nm).
+ */
+function isSubstantiallyDifferent(nm1: number, nm2: number): boolean {
+  return Math.abs(nm1 - nm2) >= 40
+}
+
 export function computeDynamicReroutes(originInput?: string, destInput?: string): {
   originKey: string
   destKey: string
@@ -499,57 +506,60 @@ export function computeDynamicReroutes(originInput?: string, destInput?: string)
   const primaryWaypoints = resolveRoute(originKey, destKey)
   const primaryNm = routeDistanceNm(primaryWaypoints) || 1250
 
-  // Generate 3 TRULY DISTINCT PostGIS bathymetric detour paths
-  const waypointsA = resolveBypassRoute(originKey, destKey, 1)
-  const waypointsB = resolveBypassRoute(originKey, destKey, 2)
-  const waypointsC = resolveBypassRoute(originKey, destKey, 3)
+  const reroutes: DynamicRerouteOption[] = []
 
-  const nmA = routeDistanceNm(waypointsA) || Math.round(primaryNm * 1.08)
-  const nmB = routeDistanceNm(waypointsB) || Math.round(primaryNm * 1.18)
-  const nmC = routeDistanceNm(waypointsC) || Math.round(primaryNm * 1.32)
+  // Candidate 1 (Primary / Recommended)
+  reroutes.push({
+    id: 'A',
+    label: `Direct Bathymetric Corridor (Primary)`,
+    detail: `Optimal open-water Dijkstra path between pier anchors.`,
+    eta: `Baseline`,
+    cost: `$${Math.round(primaryNm * 4.2).toLocaleString()}`,
+    savings: `+$0 (Baseline)`,
+    risk: `8.2%`,
+    distance: `${primaryNm.toLocaleString()} nm`,
+    recommended: true,
+    waypoints: primaryWaypoints
+  })
 
-  const delayA = Math.max(2.1, ((nmA - primaryNm) / 14)).toFixed(1)
-  const delayB = Math.max(5.4, ((nmB - primaryNm) / 14)).toFixed(1)
-  const delayC = Math.max(12.2, ((nmC - primaryNm) / 14)).toFixed(1)
+  // Candidate 2 (Alternate 1)
+  const waypointsB = resolveBypassRoute(originKey, destKey, 1)
+  const nmB = routeDistanceNm(waypointsB)
 
-  const costA = Math.round(nmA * 4.4)
-  const costB = Math.round(nmB * 4.6)
-  const costC = Math.round(nmC * 4.8)
+  if (isSubstantiallyDifferent(primaryNm, nmB)) {
+    const delayB = Math.max(2.5, ((nmB - primaryNm) / 14)).toFixed(1)
+    const costB = Math.round(nmB * 4.4)
+    const baselineLoss = Math.round(primaryNm * 7.8)
+    const savingsB = Math.max(500, baselineLoss - costB)
 
-  const baselineLoss = Math.round(primaryNm * 7.8)
-  const savingsA = Math.max(1200, baselineLoss - costA)
-  const savingsB = Math.max(400, baselineLoss - costB)
-  const savingsC = Math.round(baselineLoss - costC)
-
-  const reroutes: DynamicRerouteOption[] = [
-    {
-      id: 'A',
-      label: `Coastal Channel Bypass (ALT-A)`,
-      detail: `Optimal A* detour avoiding central weather disturbance.`,
-      eta: `+${delayA}h delay`,
-      cost: `$${costA.toLocaleString()}`,
-      savings: `+$${savingsA.toLocaleString()}`,
-      risk: `8.2%`,
-      distance: `${nmA.toLocaleString()} nm`,
-      recommended: true,
-      waypoints: waypointsA
-    },
-    {
+    reroutes.push({
       id: 'B',
-      label: `Secondary Fairway Detour (ALT-B)`,
-      detail: `Offshore passage around congested harbor approaches.`,
+      label: `Coastal Channel Bypass (ALT-B)`,
+      detail: `Secondary fairways avoiding central weather congestion.`,
       eta: `+${delayB}h delay`,
       cost: `$${costB.toLocaleString()}`,
       savings: `+$${savingsB.toLocaleString()}`,
-      risk: `14.7%`,
+      risk: `12.4%`,
       distance: `${nmB.toLocaleString()} nm`,
       recommended: false,
       waypoints: waypointsB
-    },
-    {
+    })
+  }
+
+  // Candidate 3 (Alternate 2)
+  const waypointsC = resolveBypassRoute(originKey, destKey, 3)
+  const nmC = routeDistanceNm(waypointsC)
+
+  if (isSubstantiallyDifferent(primaryNm, nmC) && isSubstantiallyDifferent(nmB, nmC)) {
+    const delayC = Math.max(6.8, ((nmC - primaryNm) / 14)).toFixed(1)
+    const costC = Math.round(nmC * 4.8)
+    const baselineLoss = Math.round(primaryNm * 7.8)
+    const savingsC = Math.round(baselineLoss - costC)
+
+    reroutes.push({
       id: 'C',
-      label: `Deepwater Safeguard (ALT-C)`,
-      detail: `Extended ocean routing with maximum storm clearance.`,
+      label: `Deepwater Offshore Safeguard (ALT-C)`,
+      detail: `Extended open ocean detour for maximum storm clearance.`,
       eta: `+${delayC}h delay`,
       cost: `$${costC.toLocaleString()}`,
       savings: savingsC >= 0 ? `+$${savingsC.toLocaleString()}` : `-$${Math.abs(savingsC).toLocaleString()}`,
@@ -557,8 +567,8 @@ export function computeDynamicReroutes(originInput?: string, destInput?: string)
       distance: `${nmC.toLocaleString()} nm`,
       recommended: false,
       waypoints: waypointsC
-    }
-  ]
+    })
+  }
 
   return { originKey, destKey, primaryWaypoints, primaryNm, reroutes }
 }
