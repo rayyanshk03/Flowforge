@@ -15,6 +15,7 @@ import {
 import dynamic from 'next/dynamic'
 import Navbar from '@/components/Navbar'
 import { computeDynamicReroutes } from '@/lib/routeEngine'
+import { PORT_CONGESTION_DATA } from '@/components/GlobalMap'
 import DecisionHistoryDrawer from '@/components/DecisionHistoryDrawer'
 import SystemSettingsModal from '@/components/SystemSettingsModal'
 import CreateScenarioModal from '@/components/CreateScenarioModal'
@@ -37,6 +38,7 @@ export default function NetworkPage() {
   const [createScenarioOpen, setCreateScenarioOpen] = useState(false)
   const [statusMenuOpen, setStatusMenuOpen] = useState(false)
   const [expandedCard, setExpandedCard] = useState<string | null>('A')
+  const [portStatusFilter, setPortStatusFilter] = useState<'ALL' | 'Heavy' | 'Medium' | 'Normal'>('ALL')
 
   // Dynamic Scenario State — originPort & destPort are the EXACT names from user input
   const [scenarioState, setScenarioState] = useState({
@@ -469,6 +471,107 @@ export default function NetworkPage() {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+
+        {/* ── SECTION 6: PORT CONGESTION MAP & ANCHORAGE INTELLIGENCE ────────── */}
+        <div className="rounded-lg border-2 border-stone-300 bg-white p-6 shadow-md space-y-5 font-mono">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-200 pb-4">
+            <div>
+              <span className="text-[10px] font-black text-[#D94E28]">SECTION 6 · PORT CONGESTION MAP &amp; ANCHORAGE INTELLIGENCE</span>
+              <h3 className="text-lg font-black text-[#151719] mt-0.5 flex items-center gap-2">
+                🏭 GLOBAL PORT CONGESTION METRICS
+              </h3>
+            </div>
+
+            {/* Congestion Status Filter Tabs */}
+            <div className="flex items-center gap-1.5 bg-[#F4F2EC] p-1 rounded-lg border border-stone-300 text-[10px] font-black">
+              {[
+                { id: 'ALL', label: 'ALL PORTS' },
+                { id: 'Heavy', label: '🔴 HEAVY' },
+                { id: 'Medium', label: '🟡 MEDIUM' },
+                { id: 'Normal', label: '🟢 NORMAL' },
+              ].map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => setPortStatusFilter(t.id as any)}
+                  className={`px-3 py-1.5 rounded transition-all ${
+                    portStatusFilter === t.id
+                      ? 'bg-white text-stone-900 shadow-2xs font-black'
+                      : 'text-stone-600 hover:text-stone-900'
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Port Congestion Cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Object.entries(PORT_CONGESTION_DATA)
+              .filter(([_, info]) => portStatusFilter === 'ALL' || info.status === portStatusFilter)
+              .map(([name, info]) => {
+                const shortName = name.split(' ')[0].replace(/[^a-zA-Z]/g, '') || name
+                return (
+                  <div
+                    key={name}
+                    className={`rounded-xl border-2 p-4 space-y-3 transition-all ${
+                      info.status === 'Heavy'
+                        ? 'border-red-300 bg-red-50/40 shadow-xs'
+                        : info.status === 'Medium'
+                        ? 'border-amber-300 bg-amber-50/40'
+                        : 'border-emerald-300 bg-emerald-50/40'
+                    }`}
+                  >
+                    {/* Header */}
+                    <div className="flex items-center justify-between border-b border-stone-200/80 pb-2">
+                      <div className="font-black text-stone-900 text-sm flex items-center gap-1.5">
+                        <span>{shortName} ⚓</span>
+                      </div>
+                      <span
+                        className="text-[10px] font-black px-2.5 py-0.5 rounded border"
+                        style={{
+                          background: info.status === 'Heavy' ? '#FEE2E2' : info.status === 'Medium' ? '#FEF3C7' : '#D1FAE5',
+                          borderColor: info.color,
+                          color: info.color === '#10B981' ? '#047857' : info.color
+                        }}
+                      >
+                        {info.badge}
+                      </span>
+                    </div>
+
+                    {/* 4 User-Requested Metrics Grid */}
+                    <div className="grid grid-cols-2 gap-2 text-[11px]">
+                      {/* 1. Waiting Time */}
+                      <div className="bg-white rounded border border-stone-200 p-2 space-y-0.5">
+                        <span className="text-stone-400 font-bold block text-[9px] uppercase">⏱️ Waiting Time</span>
+                        <strong className="text-stone-900 block font-black">{info.waitingTime}</strong>
+                      </div>
+
+                      {/* 2. Container Backlog */}
+                      <div className="bg-white rounded border border-stone-200 p-2 space-y-0.5">
+                        <span className="text-stone-400 font-bold block text-[9px] uppercase">📦 Backlog</span>
+                        <strong className="text-stone-900 block font-black">{info.containerBacklog}</strong>
+                      </div>
+
+                      {/* 3. Berth Availability */}
+                      <div className="bg-white rounded border border-stone-200 p-2 space-y-0.5">
+                        <span className="text-stone-400 font-bold block text-[9px] uppercase">⚓ Berth Occupancy</span>
+                        <strong className="text-stone-900 block font-black text-[10px] truncate" title={info.berthAvailability}>
+                          {info.berthAvailability}
+                        </strong>
+                      </div>
+
+                      {/* 4. Crane Utilization */}
+                      <div className="bg-white rounded border border-stone-200 p-2 space-y-0.5">
+                        <span className="text-stone-400 font-bold block text-[9px] uppercase">🏗️ Crane Utilization</span>
+                        <strong className="text-stone-900 block font-black">{info.craneUtilization}</strong>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
           </div>
         </div>
 

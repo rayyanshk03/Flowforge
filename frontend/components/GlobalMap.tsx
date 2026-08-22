@@ -137,7 +137,109 @@ const PIRACY_ZONES = [
   }
 ]
 
-// 4. Port Anchorage Congestion Heat Areas
+// 4. Global Port Congestion Metrics & Status
+export const PORT_CONGESTION_DATA: Record<string, {
+  status: 'Heavy' | 'Medium' | 'Normal'
+  badge: string
+  color: string
+  waitingTime: string
+  containerBacklog: string
+  berthAvailability: string
+  craneUtilization: string
+}> = {
+  'Shanghai Yangshan Port (CN)': {
+    status: 'Heavy',
+    badge: '🔴 Heavy Congestion',
+    color: '#EF4444',
+    waitingTime: '48.5 hours',
+    containerBacklog: '89,500 TEU',
+    berthAvailability: '96% Occupied (4% Available)',
+    craneUtilization: '94% Quay Rate'
+  },
+  'Singapore Tuas Hub (SG)': {
+    status: 'Normal',
+    badge: '🟢 Normal',
+    color: '#10B981',
+    waitingTime: '4.2 hours',
+    containerBacklog: '12,400 TEU',
+    berthAvailability: '68% Occupied (32% Available)',
+    craneUtilization: '74% Quay Rate'
+  },
+  'Port of Yokohama (JP)': {
+    status: 'Normal',
+    badge: '🟢 Normal',
+    color: '#10B981',
+    waitingTime: '2.8 hours',
+    containerBacklog: '6,100 TEU',
+    berthAvailability: '58% Occupied (42% Available)',
+    craneUtilization: '65% Quay Rate'
+  },
+  'Port of Kobe (JP)': {
+    status: 'Normal',
+    badge: '🟢 Normal',
+    color: '#10B981',
+    waitingTime: '3.1 hours',
+    containerBacklog: '7,800 TEU',
+    berthAvailability: '62% Occupied (38% Available)',
+    craneUtilization: '68% Quay Rate'
+  },
+  'Jebel Ali Port (AE)': {
+    status: 'Medium',
+    badge: '🟡 Medium',
+    color: '#F59E0B',
+    waitingTime: '18.4 hours',
+    containerBacklog: '34,200 TEU',
+    berthAvailability: '84% Occupied (16% Available)',
+    craneUtilization: '82% Quay Rate'
+  },
+  'Rotterdam Gateway (NL)': {
+    status: 'Medium',
+    badge: '🟡 Medium',
+    color: '#F59E0B',
+    waitingTime: '22.1 hours',
+    containerBacklog: '41,800 TEU',
+    berthAvailability: '87% Occupied (13% Available)',
+    craneUtilization: '85% Quay Rate'
+  },
+  'Jawaharlal Nehru Port (Mumbai, IN)': {
+    status: 'Heavy',
+    badge: '🔴 Heavy Congestion',
+    color: '#EF4444',
+    waitingTime: '52.0 hours',
+    containerBacklog: '64,100 TEU',
+    berthAvailability: '94% Occupied (6% Available)',
+    craneUtilization: '91% Quay Rate'
+  },
+  'Port of Chittagong (BD)': {
+    status: 'Heavy',
+    badge: '🔴 Heavy Congestion',
+    color: '#EF4444',
+    waitingTime: '68.5 hours',
+    containerBacklog: '48,200 TEU',
+    berthAvailability: '98% Occupied (2% Available)',
+    craneUtilization: '96% Quay Rate'
+  },
+  'Busan New Port (KR)': {
+    status: 'Medium',
+    badge: '🟡 Medium',
+    color: '#F59E0B',
+    waitingTime: '16.8 hours',
+    containerBacklog: '28,900 TEU',
+    berthAvailability: '79% Occupied (21% Available)',
+    craneUtilization: '78% Quay Rate'
+  },
+  'Port of Hamburg (DE)': {
+    status: 'Normal',
+    badge: '🟢 Normal',
+    color: '#10B981',
+    waitingTime: '5.6 hours',
+    containerBacklog: '14,300 TEU',
+    berthAvailability: '71% Occupied (29% Available)',
+    craneUtilization: '72% Quay Rate'
+  }
+}
+
+// 5. Port Anchorage Congestion Heat Areas
 const CONGESTION_ZONES = [
   {
     name: 'Singapore Outer Anchorage Congestion',
@@ -459,27 +561,56 @@ export default function GlobalMap({
       }
 
       // -----------------------------------------------------------------------
-      // LAYER 8: Global Commercial Ports Pins
+      // LAYER 8: Global Commercial Ports & Congestion Pins
       // -----------------------------------------------------------------------
       if (layers.ports) {
         Object.entries(PORT_COORDS).forEach(([portName, coords]) => {
           const isOrigin = portName === actualOriginKey
           const isDest = portName === actualDestKey
-          const color = isOrigin ? '#1E293B' : isDest ? '#10B981' : '#64748B'
-          const radius = isOrigin || isDest ? 8 : 4.5
+
+          const info = PORT_CONGESTION_DATA[portName] || {
+            status: 'Normal',
+            badge: '🟢 Normal',
+            color: '#10B981',
+            waitingTime: '4.5 hours',
+            containerBacklog: '11,200 TEU',
+            berthAvailability: '65% Occupied (35% Available)',
+            craneUtilization: '70% Quay Rate'
+          }
+
+          const portColor = isOrigin ? '#1E293B' : isDest ? '#10B981' : info.color
+          const radius = isOrigin || isDest ? 8 : info.status === 'Heavy' ? 7 : 5
+
+          // Heavy Congestion Outer Pulsing Ring
+          if (info.status === 'Heavy') {
+            L.circleMarker(coords, {
+              radius: 12,
+              color: '#EF4444',
+              fillColor: '#EF4444',
+              fillOpacity: 0.25,
+              weight: 1.5,
+              dashArray: '3, 3'
+            }).addTo(group)
+          }
 
           const marker = L.circleMarker(coords, {
             radius: radius,
-            fillColor: color,
+            fillColor: portColor,
             color: '#FFFFFF',
-            weight: isOrigin || isDest ? 2.5 : 1,
-            fillOpacity: isOrigin || isDest ? 1.0 : 0.75
+            weight: isOrigin || isDest ? 2.5 : 1.5,
+            fillOpacity: 0.95
           }).addTo(group)
 
           marker.bindTooltip(
-            `<div style="font-family:monospace;font-size:11px;">
-              <strong style="color:#0F172A;">${portName}</strong><br/>
-              <span style="color:#64748B;">Lat: ${coords[0].toFixed(2)}, Lng: ${coords[1].toFixed(2)}</span>
+            `<div style="font-family:monospace;font-size:11px;padding:4px;min-width:180px;">
+              <div style="font-weight:bold;color:#0F172A;font-size:12px;margin-bottom:2px;">${portName} ⚓</div>
+              <div style="font-weight:bold;margin-bottom:6px;font-size:11px;color:${info.color};">${info.badge}</div>
+              <div style="border-top:1px solid #E2E8F0;padding-top:4px;display:grid;gap:2px;">
+                <div><span style="color:#64748B;">⏱️ Waiting Time:</span> <strong>${info.waitingTime}</strong></div>
+                <div><span style="color:#64748B;">📦 Backlog:</span> <strong>${info.containerBacklog}</strong></div>
+                <div><span style="color:#64748B;">⚓ Berth Occupancy:</span> <strong>${info.berthAvailability}</strong></div>
+                <div><span style="color:#64748B;">🏗️ Crane Rate:</span> <strong>${info.craneUtilization}</strong></div>
+              </div>
             </div>`,
             { permanent: false }
           )
