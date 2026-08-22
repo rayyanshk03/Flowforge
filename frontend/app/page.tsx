@@ -66,64 +66,80 @@ export default function EnterpriseMaritimeLandingPage() {
       <main className="mx-auto max-w-[1440px] px-5 py-8 md:px-12 space-y-12">
 
         {/* 2. HERO SECTION */}
-        <section className="rounded-xl border border-[#D9D9D6] bg-white p-8 md:p-12 shadow-2xs">
-          <div className="flex flex-col lg:flex-row items-start justify-between gap-10">
-            <div className="space-y-6 max-w-3xl">
-              <div className="inline-flex items-center gap-2 rounded-full border border-stone-300 bg-[#F7F6F2] px-4 py-1.5 text-xs font-mono font-bold text-[#D94E28]">
-                <span>●</span> OPERATIONAL CONTROL TOWER
+        <section className="rounded-xl border border-[#D9D9D6] bg-white p-6 md:p-10 shadow-2xs overflow-hidden">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+            {/* Left Content (8 Columns) */}
+            <div className="lg:col-span-8 space-y-6 flex flex-col justify-between">
+              <div className="space-y-4">
+                <div className="inline-flex items-center gap-2 rounded-full border border-stone-300 bg-[#F7F6F2] px-4 py-1.5 text-xs font-mono font-bold text-[#D94E28]">
+                  <span>●</span> OPERATIONAL CONTROL TOWER · REAL-TIME DECISION ENGINE
+                </div>
+
+                <h1 className="text-4xl md:text-6xl font-black text-[#111827] tracking-tight leading-[1.1]">
+                  Make the next shipping decision <br className="hidden md:inline" />
+                  before disruption makes it for you.
+                </h1>
+
+                <p className="text-base md:text-lg text-[#4B5563] font-normal leading-relaxed max-w-2xl">
+                  FlowForge combines live operational intelligence, predictive models, geospatial routing and Monte Carlo simulation to turn uncertainty into an actionable maritime decision.
+                </p>
               </div>
 
-              <h1 className="text-4xl md:text-6xl font-black text-[#111827] tracking-tight leading-[1.1]">
-                Make the next shipping decision <br className="hidden md:inline" />
-                before disruption makes it for you.
-              </h1>
-
-              <p className="text-base md:text-lg text-[#4B5563] font-normal leading-relaxed">
-                FlowForge combines live operational intelligence, predictive models, geospatial routing and Monte Carlo simulation to turn uncertainty into an actionable maritime decision.
-              </p>
-
-              <div className="flex flex-wrap items-center gap-4 pt-2 text-xs font-mono font-bold">
+              <div className="flex flex-wrap items-center gap-4 pt-4 text-xs font-mono font-bold">
                 <button
                   onClick={() => setCreateScenarioOpen(true)}
-                  className="rounded-lg bg-[#D94E28] px-7 py-4 text-white shadow-xs hover:bg-[#C8401C] transition-colors flex items-center gap-2.5 uppercase tracking-wider text-xs"
+                  className="rounded-lg bg-[#D94E28] px-7 py-4 text-white shadow-xs hover:bg-[#C8401C] transition-all flex items-center gap-2.5 uppercase tracking-wider text-xs font-extrabold active:scale-[0.98]"
                 >
                   Start Analysis <ArrowRight className="size-4" />
                 </button>
                 <a
                   href="#visualization"
-                  className="rounded-lg border border-[#D9D9D6] bg-white px-7 py-4 text-[#111827] hover:bg-stone-50 transition-colors shadow-2xs uppercase tracking-wider text-xs"
+                  className="rounded-lg border border-[#D9D9D6] bg-white px-7 py-4 text-[#111827] hover:bg-stone-50 transition-colors shadow-2xs uppercase tracking-wider text-xs font-bold"
                 >
                   Explore How It Works
                 </a>
               </div>
             </div>
 
-            {/* Active Corridor Card */}
-            <div className="w-full lg:w-88 rounded-xl border border-[#D9D9D6] bg-[#F7F6F2] p-6 text-xs font-mono space-y-4 shrink-0 shadow-2xs">
+            {/* Right Active Voyage Telemetry Card (4 Columns) */}
+            <div className="lg:col-span-4 rounded-xl border border-[#D9D9D6] bg-[#F7F6F2] p-6 text-xs font-mono space-y-4 shadow-2xs flex flex-col justify-between">
               <div className="flex items-center justify-between border-b border-[#D9D9D6] pb-3">
-                <span className="text-[10px] font-bold text-[#667085] uppercase tracking-widest block">ACTIVE VOYAGE</span>
-                <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-2.5 py-0.5 rounded-full">
-                  ● MONITORING
+                <span className="text-[10px] font-bold text-[#667085] uppercase tracking-widest block">ACTIVE VOYAGE TELEMETRY</span>
+                <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                  <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  MONITORING
                 </span>
               </div>
-              <div className="space-y-3 text-[#111827]">
-                <div className="flex justify-between items-center">
+
+              <div className="space-y-3.5 text-[#111827]">
+                <div className="flex justify-between items-center border-b border-stone-200/60 pb-2">
                   <span className="text-[#667085]">CORRIDOR:</span>
                   <strong className="font-bold text-stone-900">Shanghai → Yokohama</strong>
                 </div>
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center border-b border-stone-200/60 pb-2">
                   <span className="text-[#667085]">VESSEL:</span>
                   <strong className="text-[#D94E28] font-bold">FF Horizon (984210)</strong>
                 </div>
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center border-b border-stone-200/60 pb-2">
                   <span className="text-[#667085]">ETA TARGET:</span>
                   <strong className="font-bold text-stone-900">18 Aug · 14:35 UTC</strong>
                 </div>
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center border-b border-stone-200/60 pb-2">
                   <span className="text-[#667085]">SPEED:</span>
                   <strong className="text-[#111827] font-bold">14.2 Knots</strong>
                 </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[#667085]">LIVE ENGINE:</span>
+                  <strong className="text-emerald-700 font-bold">XGBoost 2.1.0 Ready</strong>
+                </div>
               </div>
+
+              <button
+                onClick={() => setCreateScenarioOpen(true)}
+                className="w-full text-center rounded bg-stone-200 hover:bg-stone-300 transition-colors py-2 text-[11px] font-bold text-stone-800 uppercase tracking-wider mt-2"
+              >
+                TEST THIS VOYAGE →
+              </button>
             </div>
           </div>
         </section>
