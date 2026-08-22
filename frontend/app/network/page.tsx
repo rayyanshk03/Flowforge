@@ -578,7 +578,7 @@ export default function NetworkPage() {
         </div>
 
         {/* ── SECTION 8: MARITIME NETWORK GRAPH ALGORITHM ENGINE ─────────── */}
-        <MaritimeNetworkGraph />
+        <MaritimeNetworkGraph originPort={scenarioState.originPort} destPort={scenarioState.destPort} />
 
         {/* ── SECTION 11: MONTE CARLO ARRIVAL PROBABILITY VISUALIZATION ────── */}
         <MonteCarloArrivalChart originPort={scenarioState.originPort} destPort={scenarioState.destPort} />

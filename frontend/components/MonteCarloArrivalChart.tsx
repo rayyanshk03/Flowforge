@@ -27,22 +27,48 @@ export default function MonteCarloArrivalChart({
   const [trialCount, setTrialCount] = useState(10000)
   const [progress, setProgress] = useState(100)
 
-  // Arrival Distribution Data for Days 25, 26, 27, 28, 29
-  const [distribution, setDistribution] = useState([
-    { day: 25, prob: 12, count: 1200 },
-    { day: 26, prob: 24, count: 2400 },
-    { day: 27, prob: 38, count: 3800, isPeak: true },
-    { day: 28, prob: 18, count: 1800 },
-    { day: 29, prob: 8, count: 800 }
-  ])
+  // Calculate baseline expected days based on origin & dest input ports
+  const baseDays = React.useMemo(() => {
+    const orig = (originPort || '').toLowerCase()
+    const dest = (destPort || '').toLowerCase()
+
+    if (orig.includes('shanghai') && dest.includes('yokohama')) return 4
+    if (orig.includes('singapore') && dest.includes('yokohama')) return 8
+    if (orig.includes('shanghai') && dest.includes('singapore')) return 6
+    if (orig.includes('mumbai') && dest.includes('rotterdam')) return 18
+    if (orig.includes('rotterdam') && dest.includes('chittagong')) return 21
+    if (orig.includes('shanghai') || dest.includes('rotterdam') || dest.includes('hamburg')) return 27
+    return 14
+  }, [originPort, destPort])
+
+  const [distribution, setDistribution] = useState<Array<{ day: number; prob: number; count: number; isPeak?: boolean }>>([])
 
   const [metrics, setMetrics] = useState({
-    expectedEta: '27 days',
+    expectedEta: `${baseDays} days`,
     confidence: '91%',
-    p50: '26.8 days',
-    p90: '28.2 days',
+    p50: `${(baseDays - 0.2).toFixed(1)} days`,
+    p90: `${(baseDays + 1.4).toFixed(1)} days`,
     riskTailProb: '3.2%'
   })
+
+  // Synchronize distribution when ports change
+  useEffect(() => {
+    const peakDay = baseDays
+    setDistribution([
+      { day: Math.max(1, peakDay - 2), prob: 12, count: Math.round(trialCount * 0.12) },
+      { day: Math.max(1, peakDay - 1), prob: 24, count: Math.round(trialCount * 0.24) },
+      { day: peakDay, prob: 38, count: Math.round(trialCount * 0.38), isPeak: true },
+      { day: peakDay + 1, prob: 18, count: Math.round(trialCount * 0.18) },
+      { day: peakDay + 2, prob: 8, count: Math.round(trialCount * 0.08) }
+    ])
+    setMetrics({
+      expectedEta: `${peakDay} days`,
+      confidence: '91%',
+      p50: `${(peakDay - 0.2).toFixed(1)} days`,
+      p90: `${(peakDay + 1.4).toFixed(1)} days`,
+      riskTailProb: '3.2%'
+    })
+  }, [baseDays, trialCount])
 
   const runSimulation = () => {
     setIsRunning(true)
@@ -59,21 +85,21 @@ export default function MonteCarloArrivalChart({
       })
     }, 120)
 
-    // Slight dynamic jitter based on trial count to demonstrate stochastic execution
+    const peakDay = baseDays
     const randomPeak = 36 + Math.floor(Math.random() * 5)
     setDistribution([
-      { day: 25, prob: 10 + Math.floor(Math.random() * 4), count: Math.round(trialCount * 0.11) },
-      { day: 26, prob: 22 + Math.floor(Math.random() * 4), count: Math.round(trialCount * 0.23) },
-      { day: 27, prob: randomPeak, count: Math.round(trialCount * (randomPeak / 100)), isPeak: true },
-      { day: 28, prob: 17 + Math.floor(Math.random() * 3), count: Math.round(trialCount * 0.18) },
-      { day: 29, prob: 7 + Math.floor(Math.random() * 3), count: Math.round(trialCount * 0.08) }
+      { day: Math.max(1, peakDay - 2), prob: 10 + Math.floor(Math.random() * 4), count: Math.round(trialCount * 0.11) },
+      { day: Math.max(1, peakDay - 1), prob: 22 + Math.floor(Math.random() * 4), count: Math.round(trialCount * 0.23) },
+      { day: peakDay, prob: randomPeak, count: Math.round(trialCount * (randomPeak / 100)), isPeak: true },
+      { day: peakDay + 1, prob: 17 + Math.floor(Math.random() * 3), count: Math.round(trialCount * 0.18) },
+      { day: peakDay + 2, prob: 7 + Math.floor(Math.random() * 3), count: Math.round(trialCount * 0.08) }
     ])
 
     setMetrics({
-      expectedEta: '27 days',
+      expectedEta: `${peakDay} days`,
       confidence: `${89 + Math.floor(Math.random() * 4)}%`,
-      p50: '26.8 days',
-      p90: '28.4 days',
+      p50: `${(peakDay - 0.2).toFixed(1)} days`,
+      p90: `${(peakDay + 1.4).toFixed(1)} days`,
       riskTailProb: '3.1%'
     })
   }

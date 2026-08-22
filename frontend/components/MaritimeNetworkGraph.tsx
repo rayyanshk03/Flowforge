@@ -44,10 +44,45 @@ const GRAPH_EDGES = [
   { from: 'CAPE_TOWN', to: 'ROTTERDAM', distNm: 6100, hours: 442, risk: 4, fuelMt: 498, costUsd: 74200 }
 ]
 
-export default function MaritimeNetworkGraph() {
+interface MaritimeNetworkGraphProps {
+  originPort?: string
+  destPort?: string
+}
+
+export default function MaritimeNetworkGraph({
+  originPort = 'Shanghai',
+  destPort = 'Rotterdam'
+}: MaritimeNetworkGraphProps) {
   const [algorithm, setAlgorithm] = useState<'DIJKSTRA' | 'ASTAR' | 'NSGA2'>('NSGA2')
-  const [startNode, setStartNode] = useState('SHANGHAI')
-  const [targetNode, setTargetNode] = useState('ROTTERDAM')
+
+  // Helper to resolve graph node ID from raw input port string
+  const resolveNodeId = (input?: string, fallback: string = 'SHANGHAI') => {
+    if (!input) return fallback
+    const norm = input.toUpperCase().trim()
+    if (norm.includes('SHANGHAI') || norm.includes('CNSHA')) return 'SHANGHAI'
+    if (norm.includes('SINGAPORE') || norm.includes('SGSIN')) return 'SINGAPORE'
+    if (norm.includes('MUMBAI') || norm.includes('INBOM') || norm.includes('INNSA')) return 'MUMBAI'
+    if (norm.includes('DUBAI') || norm.includes('JEBEL')) return 'DUBAI'
+    if (norm.includes('ROTTERDAM') || norm.includes('NLRTM')) return 'ROTTERDAM'
+    if (norm.includes('YOKOHAMA') || norm.includes('JPYOK')) return 'YOKOHAMA'
+    if (norm.includes('BUSAN') || norm.includes('KRPUS')) return 'BUSAN'
+    if (norm.includes('KOBE') || norm.includes('JPUKB')) return 'BUSAN'
+    if (norm.includes('HAMBURG') || norm.includes('DEHAM')) return 'ROTTERDAM'
+    if (norm.includes('CHITTAGONG') || norm.includes('BDCGP')) return 'MUMBAI'
+    return fallback
+  }
+
+  const initialStart = resolveNodeId(originPort, 'SHANGHAI')
+  const initialTarget = resolveNodeId(destPort, 'ROTTERDAM')
+
+  const [startNode, setStartNode] = useState(initialStart)
+  const [targetNode, setTargetNode] = useState(initialTarget)
+
+  // React to prop changes dynamically
+  React.useEffect(() => {
+    setStartNode(resolveNodeId(originPort, 'SHANGHAI'))
+    setTargetNode(resolveNodeId(destPort, 'ROTTERDAM'))
+  }, [originPort, destPort])
 
   // Multi-Objective NSGA-II Weights Sliders
   const [costWeight, setCostWeight] = useState(40)
