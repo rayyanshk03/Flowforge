@@ -19,6 +19,7 @@ import { PORT_CONGESTION_DATA } from '@/components/GlobalMap'
 import DecisionHistoryDrawer from '@/components/DecisionHistoryDrawer'
 import SystemSettingsModal from '@/components/SystemSettingsModal'
 import CreateScenarioModal from '@/components/CreateScenarioModal'
+import MaritimeNetworkGraph from '@/components/MaritimeNetworkGraph'
 
 const GlobalMap = dynamic(() => import('@/components/GlobalMap'), {
   ssr: false,
@@ -574,6 +575,9 @@ export default function NetworkPage() {
               })}
           </div>
         </div>
+
+        {/* ── SECTION 8: MARITIME NETWORK GRAPH ALGORITHM ENGINE ─────────── */}
+        <MaritimeNetworkGraph />
 
         {/* ── SECTION 4: DATA SOURCES & BOTTOM CTA ────────────────────── */}
         <div className="rounded-lg border border-stone-300 bg-white p-5 md:p-6 flex flex-wrap items-center justify-between gap-5 shadow-2xs font-mono">
