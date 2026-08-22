@@ -1,17 +1,12 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import {
   BarChart3,
   Play,
   RefreshCw,
-  Sparkles,
-  CheckCircle2,
-  TrendingUp,
-  ShieldCheck,
   Clock,
-  Zap,
-  Activity
+  ShieldCheck
 } from 'lucide-react'
 
 interface MonteCarloArrivalChartProps {
@@ -28,7 +23,7 @@ export default function MonteCarloArrivalChart({
   const [progress, setProgress] = useState(100)
 
   // Calculate baseline expected days based on origin & dest input ports
-  const baseDays = React.useMemo(() => {
+  const baseDays = useMemo(() => {
     const orig = (originPort || '').toLowerCase()
     const dest = (destPort || '').toLowerCase()
 
@@ -41,7 +36,19 @@ export default function MonteCarloArrivalChart({
     return 14
   }, [originPort, destPort])
 
-  const [distribution, setDistribution] = useState<Array<{ day: number; prob: number; count: number; isPeak?: boolean }>>([])
+  // Pre-initialize initial distribution state so bars ALWAYS render immediately
+  const initialDistribution = useMemo(() => {
+    const peakDay = baseDays
+    return [
+      { day: Math.max(1, peakDay - 2), prob: 12, count: Math.round(trialCount * 0.12) },
+      { day: Math.max(1, peakDay - 1), prob: 24, count: Math.round(trialCount * 0.24) },
+      { day: peakDay, prob: 38, count: Math.round(trialCount * 0.38), isPeak: true },
+      { day: peakDay + 1, prob: 18, count: Math.round(trialCount * 0.18) },
+      { day: peakDay + 2, prob: 8, count: Math.round(trialCount * 0.08) }
+    ]
+  }, [baseDays, trialCount])
+
+  const [distribution, setDistribution] = useState(initialDistribution)
 
   const [metrics, setMetrics] = useState({
     expectedEta: `${baseDays} days`,
@@ -53,22 +60,15 @@ export default function MonteCarloArrivalChart({
 
   // Synchronize distribution when ports change
   useEffect(() => {
-    const peakDay = baseDays
-    setDistribution([
-      { day: Math.max(1, peakDay - 2), prob: 12, count: Math.round(trialCount * 0.12) },
-      { day: Math.max(1, peakDay - 1), prob: 24, count: Math.round(trialCount * 0.24) },
-      { day: peakDay, prob: 38, count: Math.round(trialCount * 0.38), isPeak: true },
-      { day: peakDay + 1, prob: 18, count: Math.round(trialCount * 0.18) },
-      { day: peakDay + 2, prob: 8, count: Math.round(trialCount * 0.08) }
-    ])
+    setDistribution(initialDistribution)
     setMetrics({
-      expectedEta: `${peakDay} days`,
+      expectedEta: `${baseDays} days`,
       confidence: '91%',
-      p50: `${(peakDay - 0.2).toFixed(1)} days`,
-      p90: `${(peakDay + 1.4).toFixed(1)} days`,
+      p50: `${(baseDays - 0.2).toFixed(1)} days`,
+      p90: `${(baseDays + 1.4).toFixed(1)} days`,
       riskTailProb: '3.2%'
     })
-  }, [baseDays, trialCount])
+  }, [initialDistribution, baseDays])
 
   const runSimulation = () => {
     setIsRunning(true)
@@ -157,7 +157,7 @@ export default function MonteCarloArrivalChart({
       {/* Main Grid: Histogram Chart (Left 7 Cols) + Expected ETA Output Cards (Right 5 Cols) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
 
-        {/* LEFT: Arrival Probability Histogram Chart (Requested Layout) */}
+        {/* LEFT: Arrival Probability Histogram Chart */}
         <div className="lg:col-span-7 rounded-xl border-2 border-stone-300 bg-[#F6F6F3] p-5 space-y-4 shadow-inner">
           <div className="flex items-center justify-between border-b border-stone-300 pb-2">
             <span className="text-[10px] font-black text-stone-600 uppercase tracking-widest flex items-center gap-1.5">
@@ -174,37 +174,38 @@ export default function MonteCarloArrivalChart({
               Y-AXIS: PROBABILITY (%)
             </div>
 
-            <div className="flex items-end justify-between gap-4 h-48 border-b-2 border-l-2 border-stone-400 pl-4 pb-2 relative">
+            {/* Bar Chart Container */}
+            <div className="h-56 border-b-2 border-l-2 border-stone-400 pl-4 pb-2 relative flex items-end justify-between gap-4">
 
               {/* Horizontal Grid lines (40%, 30%, 20%, 10%) */}
-              <div className="absolute left-0 right-0 top-0 border-b border-dashed border-stone-200 text-[9px] text-stone-400 font-bold pl-1">
+              <div className="absolute left-0 right-0 top-0 border-b border-dashed border-stone-200 text-[9px] text-stone-400 font-bold pl-1 pointer-events-none">
                 40%
               </div>
-              <div className="absolute left-0 right-0 top-1/4 border-b border-dashed border-stone-200 text-[9px] text-stone-400 font-bold pl-1">
+              <div className="absolute left-0 right-0 top-1/4 border-b border-dashed border-stone-200 text-[9px] text-stone-400 font-bold pl-1 pointer-events-none">
                 30%
               </div>
-              <div className="absolute left-0 right-0 top-2/4 border-b border-dashed border-stone-200 text-[9px] text-stone-400 font-bold pl-1">
+              <div className="absolute left-0 right-0 top-2/4 border-b border-dashed border-stone-200 text-[9px] text-stone-400 font-bold pl-1 pointer-events-none">
                 20%
               </div>
-              <div className="absolute left-0 right-0 top-3/4 border-b border-dashed border-stone-200 text-[9px] text-stone-400 font-bold pl-1">
+              <div className="absolute left-0 right-0 top-3/4 border-b border-dashed border-stone-200 text-[9px] text-stone-400 font-bold pl-1 pointer-events-none">
                 10%
               </div>
 
               {/* Histogram Bars */}
               {distribution.map((item) => {
-                const heightPct = Math.min(100, (item.prob / 40) * 100)
+                const heightPx = Math.max(24, Math.round((item.prob / 40) * 180))
                 const barColor = item.isPeak ? '#047857' : item.prob > 20 ? '#D94E28' : '#F59E0B'
 
                 return (
-                  <div key={item.day} className="flex-1 flex flex-col items-center gap-1.5 z-10 group">
-                    <span className="text-[11px] font-black text-stone-900 transition-all group-hover:scale-110">
+                  <div key={item.day} className="flex-1 flex flex-col items-center justify-end h-full z-10 group">
+                    <span className="text-[11px] font-black text-stone-900 mb-1 transition-all group-hover:scale-110">
                       {item.prob}%
                     </span>
                     <div
-                      className="w-full rounded-t transition-all duration-500 shadow-sm"
+                      className="w-full rounded-t transition-all duration-500 shadow-xs"
                       style={{
-                        height: `${heightPct}%`,
-                        background: barColor,
+                        height: `${heightPx}px`,
+                        backgroundColor: barColor,
                         opacity: isRunning ? 0.6 : 0.95
                       }}
                     />
@@ -270,7 +271,7 @@ export default function MonteCarloArrivalChart({
               {metrics.confidence}
             </div>
             <p className="text-[11px] text-stone-500 font-semibold pt-1">
-              91% statistical probability of arriving on or before Day 27.
+              91% statistical probability of arriving on or before Day {baseDays}.
             </p>
           </div>
 
