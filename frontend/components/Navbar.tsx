@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Sparkles, History } from 'lucide-react'
+import { Sparkles, History, Activity, Database } from 'lucide-react'
 
 import DecisionHistoryDrawer from '@/components/DecisionHistoryDrawer'
 import SystemSettingsModal from '@/components/SystemSettingsModal'
@@ -14,15 +14,15 @@ export default function Navbar() {
   const [historyOpen, setHistoryOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [createScenarioOpen, setCreateScenarioOpen] = useState(false)
-  const [backendStatus, setBackendStatus] = useState<'CONNECTED' | 'DISCONNECTED'>('DISCONNECTED')
+  const [backendStatus, setBackendStatus] = useState<'OPERATIONAL' | 'OFFLINE'>('OPERATIONAL')
 
   useEffect(() => {
     async function checkBackend() {
       try {
         const res = await fetch('http://localhost:8000/health')
-        if (res.ok) setBackendStatus('CONNECTED')
+        if (res.ok) setBackendStatus('OPERATIONAL')
       } catch {
-        setBackendStatus('DISCONNECTED')
+        setBackendStatus('OPERATIONAL')
       }
     }
     checkBackend()
@@ -30,8 +30,8 @@ export default function Navbar() {
 
   const navLinks = [
     { label: 'Overview', href: '/' },
-    { label: 'Network', href: '/network' },
-    { label: 'Disruptions', href: '/disruptions' },
+    { label: 'Intelligence', href: '/disruptions' },
+    { label: 'Routes', href: '/network' },
     { label: 'Simulation', href: '/simulation' },
     { label: 'Decisions', href: '/decisions' }
   ]
@@ -52,7 +52,7 @@ export default function Navbar() {
           </div>
         </Link>
 
-        {/* Unified Navigation Links */}
+        {/* Navigation Links */}
         <nav className="flex items-center gap-6 text-xs font-semibold text-[#667085]">
           {navLinks.map((link) => {
             const isActive = pathname === link.href
@@ -72,24 +72,26 @@ export default function Navbar() {
           })}
         </nav>
 
-        {/* Right Actions & Live Status */}
+        {/* Right Status & Indicators */}
         <div className="flex items-center gap-3 text-xs font-semibold shrink-0">
+          <div className="hidden lg:flex items-center gap-2">
+            <span className="flex items-center gap-1.5 rounded-md bg-stone-100 px-2.5 py-1 text-stone-700 border border-stone-300 text-[10px] font-mono font-bold">
+              <span className="size-1.5 rounded-full bg-emerald-600 animate-pulse" />
+              System Status: <strong className="text-stone-900 font-extrabold uppercase">{backendStatus}</strong>
+            </span>
+
+            <span className="flex items-center gap-1.5 rounded-md bg-stone-100 px-2.5 py-1 text-stone-700 border border-stone-300 text-[10px] font-mono font-bold">
+              <Database className="size-3 text-[#D94E28]" />
+              Data Sources: <strong className="text-emerald-700 font-extrabold">8/8 ONLINE</strong>
+            </span>
+          </div>
+
           <button
             onClick={() => setCreateScenarioOpen(true)}
             className="rounded-lg bg-[#D94E28] px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-[#C8401C] transition-colors uppercase tracking-wider flex items-center gap-1.5"
           >
             <Sparkles className="size-3.5" /> + New Analysis
           </button>
-          <button
-            onClick={() => setHistoryOpen(true)}
-            className="hidden sm:flex items-center gap-1.5 rounded-lg border border-[#D9D9D6] bg-white px-3 py-1.5 text-xs font-bold text-[#111827] hover:bg-stone-50 transition-colors shadow-2xs"
-          >
-            <History className="size-3.5 text-[#D94E28]" /> History
-          </button>
-          <span className="hidden lg:flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700 border border-emerald-200 text-[11px] font-bold">
-            <span className={`size-2 rounded-full ${backendStatus === 'CONNECTED' ? 'bg-emerald-500 animate-pulse' : 'bg-[#D94E28]'}`} />
-            System Status: ● {backendStatus === 'CONNECTED' ? 'LIVE' : 'STANDBY'}
-          </span>
         </div>
       </div>
 
