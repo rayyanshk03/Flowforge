@@ -21,8 +21,6 @@ import SystemSettingsModal from '@/components/SystemSettingsModal'
 import CreateScenarioModal from '@/components/CreateScenarioModal'
 import MaritimeNetworkGraph from '@/components/MaritimeNetworkGraph'
 import MonteCarloArrivalChart from '@/components/MonteCarloArrivalChart'
-import BusinessActionLayer from '@/components/BusinessActionLayer'
-import CostIntelligenceView from '@/components/CostIntelligenceView'
 
 const GlobalMap = dynamic(() => import('@/components/GlobalMap'), {
   ssr: false,
@@ -439,17 +437,94 @@ export default function NetworkPage() {
                       </button>
                     </div>
 
-                    {/* Collapsible Stepper & Deep Detail Block */}
+                    {/* Collapsible Stepper & Deep Multi-Metric Decision Detail Block */}
                     {isExpanded && (
-                      <div className="pt-2 border-t border-stone-300 space-y-2 animate-in fade-in zoom-in-95">
-                        <p className="text-[10px] text-stone-600 font-semibold leading-relaxed">{r.detail}</p>
-                        <div className="rounded border border-stone-300 bg-white p-2.5 space-y-1 text-[10px]">
-                          <span className="font-black text-stone-500 uppercase block text-[9px]">STEP-BY-STEP WAYPOINT TREE</span>
-                          {r.corridorSteps?.map((s, i) => (
-                            <div key={i} className="flex items-center gap-1.5 text-stone-800 font-bold">
-                              <span className="text-[9px] text-[#D94E28] font-black">[{i + 1}]</span> {s}
-                            </div>
-                          ))}
+                      <div className="pt-3 border-t border-stone-300 space-y-3 animate-in fade-in zoom-in-95 text-xs">
+                        {/* 1. DECISION ACTION CONTROL & STATUS */}
+                        <div className="flex items-center justify-between bg-stone-100 p-2.5 rounded-lg border border-stone-300">
+                          <span className="text-[10px] font-black text-stone-500 uppercase tracking-widest">
+                            RECOMMENDED ACTION:
+                          </span>
+                          <span className={`px-3 py-1 rounded text-[10px] font-black ${
+                            r.decisionReasons.status === 'APPROVE'
+                              ? 'bg-emerald-100 border border-emerald-500 text-emerald-900'
+                              : r.decisionReasons.status === 'PAUSE'
+                              ? 'bg-amber-100 border border-amber-500 text-amber-900'
+                              : 'bg-red-100 border border-red-500 text-red-900'
+                          }`}>
+                            {r.decisionReasons.status === 'APPROVE' ? '✅ CHOOSE / APPROVE' : r.decisionReasons.status === 'PAUSE' ? '⏸️ PAUSE / STANDBY' : '🚫 SKIP / REJECT'}
+                          </span>
+                        </div>
+
+                        {/* 2. ALL POSSIBLE METRICS BREAKDOWN (4 GRID CARDS) */}
+                        <div className="grid grid-cols-2 gap-2 text-[10px]">
+                          {/* Financial Metrics */}
+                          <div className="bg-[#F4F2EC] rounded border border-stone-300 p-2 space-y-1">
+                            <span className="font-black text-[#D94E28] uppercase block text-[9px]">💰 FINANCIAL METRICS</span>
+                            <div><span className="text-stone-500">Voyage Cost:</span> <strong className="text-stone-900 font-mono">{r.financialMetrics?.totalVoyageCost}</strong></div>
+                            <div><span className="text-stone-500">Fuel Expenses:</span> <strong className="text-stone-900 font-mono">{r.financialMetrics?.fuelBunkeringCost}</strong></div>
+                            <div><span className="text-stone-500">Canal Tolls:</span> <strong className="text-stone-900 font-mono">{r.financialMetrics?.canalTolls}</strong></div>
+                            <div><span className="text-stone-500">Net Savings:</span> <strong className="text-emerald-800 font-mono">{r.financialMetrics?.netSavings}</strong></div>
+                          </div>
+
+                          {/* Time & Speed Metrics */}
+                          <div className="bg-[#F4F2EC] rounded border border-stone-300 p-2 space-y-1">
+                            <span className="font-black text-amber-800 uppercase block text-[9px]">⏱️ TIME &amp; SPEED METRICS</span>
+                            <div><span className="text-stone-500">Transit Days:</span> <strong className="text-stone-900 font-mono">{r.timeMetrics?.transitDays}</strong></div>
+                            <div><span className="text-stone-500">Sailing Speed:</span> <strong className="text-stone-900 font-mono">{r.timeMetrics?.speedKnots}</strong></div>
+                            <div><span className="text-stone-500">Canal Wait:</span> <strong className="text-stone-900 font-mono">{r.timeMetrics?.canalWaitHours}</strong></div>
+                            <div><span className="text-stone-500">ETA Delta:</span> <strong className="text-stone-900 font-mono">{r.timeMetrics?.etaDelta}</strong></div>
+                          </div>
+
+                          {/* Safety & Risk Metrics */}
+                          <div className="bg-[#F4F2EC] rounded border border-stone-300 p-2 space-y-1">
+                            <span className="font-black text-red-800 uppercase block text-[9px]">🛡️ SAFETY &amp; RISK METRICS</span>
+                            <div><span className="text-stone-500">Overall Risk:</span> <strong className="text-stone-900 font-mono">{r.safetyMetrics?.overallRisk}</strong></div>
+                            <div><span className="text-stone-500">Threat Index:</span> <strong className="text-stone-900 font-mono">{r.safetyMetrics?.threatIndex}/100</strong></div>
+                            <div><span className="text-stone-500">Max Waves:</span> <strong className="text-stone-900 font-mono">{r.safetyMetrics?.maxWaveHeight}</strong></div>
+                            <div><span className="text-stone-500">Chokepoint:</span> <strong className="text-stone-900 font-mono text-[9px] truncate block">{r.safetyMetrics?.chokepointExposure}</strong></div>
+                          </div>
+
+                          {/* Environmental & CII Metrics */}
+                          <div className="bg-[#F4F2EC] rounded border border-stone-300 p-2 space-y-1">
+                            <span className="font-black text-[#047857] uppercase block text-[9px]">🌿 CII &amp; EMISSIONS</span>
+                            <div><span className="text-stone-500">Fuel HFO:</span> <strong className="text-stone-900 font-mono">{r.environmentalMetrics?.fuelMt}</strong></div>
+                            <div><span className="text-stone-500">CO2 Emissions:</span> <strong className="text-stone-900 font-mono">{r.environmentalMetrics?.co2EmissionsMt}</strong></div>
+                            <div><span className="text-stone-500">CII Rating:</span> <strong className="text-[#047857] font-mono">{r.environmentalMetrics?.ciiRating}</strong></div>
+                          </div>
+                        </div>
+
+                        {/* 3. STRATEGIC REASONING CARDS */}
+                        <div className="space-y-2 pt-1 font-mono text-[10px]">
+                          {/* Why Choose */}
+                          <div className="bg-emerald-50 border border-emerald-300 rounded p-2.5 space-y-1">
+                            <span className="font-black text-[#047857] uppercase block text-[9px]">✅ WHY CHOOSE THIS ROUTE</span>
+                            <ul className="list-disc list-inside text-emerald-950 space-y-0.5 font-semibold">
+                              {r.decisionReasons?.whyChoose.map((reason, idx) => (
+                                <li key={idx}>{reason}</li>
+                              ))}
+                            </ul>
+                          </div>
+
+                          {/* Why Pause */}
+                          <div className="bg-amber-50 border border-amber-300 rounded p-2.5 space-y-1">
+                            <span className="font-black text-amber-900 uppercase block text-[9px]">⏸️ WHEN TO PAUSE / PUT ON HOLD</span>
+                            <ul className="list-disc list-inside text-amber-950 space-y-0.5 font-semibold">
+                              {r.decisionReasons?.whyPause.map((reason, idx) => (
+                                <li key={idx}>{reason}</li>
+                              ))}
+                            </ul>
+                          </div>
+
+                          {/* Why Skip */}
+                          <div className="bg-red-50 border border-red-300 rounded p-2.5 space-y-1">
+                            <span className="font-black text-red-900 uppercase block text-[9px]">🚫 WHY TO SKIP / REJECT</span>
+                            <ul className="list-disc list-inside text-red-950 space-y-0.5 font-semibold">
+                              {r.decisionReasons?.whySkip.map((reason, idx) => (
+                                <li key={idx}>{reason}</li>
+                              ))}
+                            </ul>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -595,17 +670,6 @@ export default function NetworkPage() {
 
         {/* ── SECTION 11: MONTE CARLO ARRIVAL PROBABILITY VISUALIZATION ────── */}
         <MonteCarloArrivalChart originPort={scenarioState.originPort} destPort={scenarioState.destPort} />
-
-        {/* ── SECTION 12: AUTONOMOUS BUSINESS ACTION LAYER & DECISION EXECUTION ── */}
-        <BusinessActionLayer
-          shipmentId="FF-821"
-          originPort={scenarioState.originPort}
-          destPort={scenarioState.destPort}
-          reroutePath={reroutes[0]?.waypoints || [scenarioState.originPort, 'Jaipur', scenarioState.destPort]}
-        />
-
-        {/* ── SECTION 14: COST INTELLIGENCE & FINANCIAL OPTIMIZATION ──────── */}
-        <CostIntelligenceView originPort={scenarioState.originPort} destPort={scenarioState.destPort} />
 
         {/* ── SECTION 4: DATA SOURCES & BOTTOM CTA ────────────────────── */}
         <div className="rounded-lg border border-stone-300 bg-white p-5 md:p-6 flex flex-wrap items-center justify-between gap-5 shadow-2xs font-mono">

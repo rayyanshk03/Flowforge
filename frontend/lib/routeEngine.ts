@@ -509,6 +509,36 @@ export interface DynamicRerouteOption {
   etaDays: string
   fuelImpact: string
   riskLevel: string
+  financialMetrics: {
+    totalVoyageCost: string
+    fuelBunkeringCost: string
+    canalTolls: string
+    delaySurcharge: string
+    netSavings: string
+  }
+  timeMetrics: {
+    transitDays: string
+    speedKnots: string
+    canalWaitHours: string
+    etaDelta: string
+  }
+  safetyMetrics: {
+    overallRisk: string
+    threatIndex: number
+    maxWaveHeight: string
+    chokepointExposure: string
+  }
+  environmentalMetrics: {
+    fuelMt: string
+    co2EmissionsMt: string
+    ciiRating: string
+  }
+  decisionReasons: {
+    status: 'APPROVE' | 'PAUSE' | 'SKIP'
+    whyChoose: string[]
+    whyPause: string[]
+    whySkip: string[]
+  }
 }
 
 export function findPortKey(inputName?: string, fallbackKey: string = 'Shanghai Yangshan Port (CN)'): string {
@@ -622,14 +652,16 @@ export function computeDynamicReroutes(originInput?: string, destInput?: string)
   const reroutes: DynamicRerouteOption[] = []
 
   const etaDaysA = Math.max(1, Math.round(primaryNm / (13.8 * 24)))
+  const costA = Math.round(primaryNm * 4.2)
+  const fuelA = Math.round(primaryNm * 0.032)
 
-  // Candidate 1 (Primary / Recommended)
+  // Candidate 1 (Primary / Recommended — ALT-A)
   reroutes.push({
     id: 'A',
     label: `Direct Bathymetric Corridor (Primary)`,
     detail: `Optimal 100% open-water Dijkstra path between pier anchors.`,
     eta: `Baseline`,
-    cost: `$${Math.round(primaryNm * 4.2).toLocaleString()}`,
+    cost: `$${costA.toLocaleString()}`,
     savings: `+$0 (Baseline)`,
     risk: `8.2%`,
     distance: `${primaryNm.toLocaleString()} nm`,
@@ -638,71 +670,178 @@ export function computeDynamicReroutes(originInput?: string, destInput?: string)
     corridorSteps: [origName, 'Singapore Hub', 'Suez Canal Pass', destName],
     etaDays: `${etaDaysA} days`,
     fuelImpact: `-18%`,
-    riskLevel: `Low`
+    riskLevel: `Low`,
+    financialMetrics: {
+      totalVoyageCost: `$${costA.toLocaleString()}`,
+      fuelBunkeringCost: `$${Math.round(costA * 0.42).toLocaleString()}`,
+      canalTolls: `$${Math.round(costA * 0.18).toLocaleString()}`,
+      delaySurcharge: `$0`,
+      netSavings: `+$0 (Baseline Best)`
+    },
+    timeMetrics: {
+      transitDays: `${etaDaysA} days`,
+      speedKnots: `13.8 kn`,
+      canalWaitHours: `4.2 hrs`,
+      etaDelta: `On Schedule`
+    },
+    safetyMetrics: {
+      overallRisk: `Low (8.2%)`,
+      threatIndex: 18,
+      maxWaveHeight: `2.4m`,
+      chokepointExposure: `Suez Canal (Normal)`
+    },
+    environmentalMetrics: {
+      fuelMt: `${fuelA} MT`,
+      co2EmissionsMt: `${Math.round(fuelA * 3.114)} MT`,
+      ciiRating: `A (Optimal)`
+    },
+    decisionReasons: {
+      status: 'APPROVE',
+      whyChoose: [
+        `Lowest overall fuel consumption (${fuelA} MT HFO) with -18% savings vs unoptimized paths.`,
+        `Shortest spatial distance (${primaryNm.toLocaleString()} nm) between pier anchors.`,
+        `Optimal CII Rating 'A' with minimum total emissions (${Math.round(fuelA * 3.114)} MT CO2e).`
+      ],
+      whyPause: [
+        `Pause execution if Suez Canal waiting queue exceeds 36 hours.`,
+        `Hold at Singapore anchorage if monsoon wave height exceeds 4.5m.`
+      ],
+      whySkip: [
+        `Skip if Red Sea geopolitical risk index spikes above 65%.`,
+        `Disqualify if canal toll surcharges increase by more than +30%.`
+      ]
+    }
   })
 
-  // Candidate 2 (Alternate 1 — Coastal / Intermediate Bypass)
+  // Candidate 2 (Alternate 1 — Coastal / Intermediate Bypass — ALT-B)
   const waypointsB = resolveBypassRoute(originKey, destKey, 1)
-  if (waypointsB.length > 1) {
-    const nmB = routeDistanceNm(waypointsB)
+  const nmB = waypointsB.length > 1 ? routeDistanceNm(waypointsB) : Math.round(primaryNm * 1.15)
+  const delayB = Math.max(2.5, ((nmB - primaryNm) / 14)).toFixed(1)
+  const costB = Math.round(nmB * 4.4)
+  const savingsB = Math.max(500, Math.round(primaryNm * 7.8 - costB))
+  const etaDaysB = Math.max(1, Math.round(nmB / (13.8 * 24)))
+  const fuelB = Math.round(nmB * 0.035)
 
-    if (isSubstantiallyDifferent(primaryNm, nmB)) {
-      const delayB = Math.max(2.5, ((nmB - primaryNm) / 14)).toFixed(1)
-      const costB = Math.round(nmB * 4.4)
-      const baselineLoss = Math.round(primaryNm * 7.8)
-      const savingsB = Math.max(500, baselineLoss - costB)
-      const etaDaysB = Math.max(1, Math.round(nmB / (13.8 * 24)))
-
-      reroutes.push({
-        id: 'B',
-        label: `Coastal Channel Bypass (ALT-B)`,
-        detail: `Secondary open-water fairways avoiding central weather congestion.`,
-        eta: `+${delayB}h delay`,
-        cost: `$${costB.toLocaleString()}`,
-        savings: `+$${savingsB.toLocaleString()}`,
-        risk: `12.4%`,
-        distance: `${nmB.toLocaleString()} nm`,
-        recommended: false,
-        waypoints: waypointsB,
-        corridorSteps: [origName, 'Malacca Channel', 'Red Sea Coastal Fairway', destName],
-        etaDays: `${etaDaysB} days`,
-        fuelImpact: `+6%`,
-        riskLevel: `Moderate`
-      })
+  reroutes.push({
+    id: 'B',
+    label: `Coastal Channel Bypass (ALT-B)`,
+    detail: `Secondary open-water fairways avoiding central weather congestion zones.`,
+    eta: `+${delayB}h delay`,
+    cost: `$${costB.toLocaleString()}`,
+    savings: `+$${savingsB.toLocaleString()}`,
+    risk: `12.4%`,
+    distance: `${nmB.toLocaleString()} nm`,
+    recommended: false,
+    waypoints: waypointsB.length > 1 ? waypointsB : primaryWaypoints,
+    corridorSteps: [origName, 'Malacca Channel', 'Red Sea Coastal Fairway', destName],
+    etaDays: `${etaDaysB} days`,
+    fuelImpact: `+6%`,
+    riskLevel: `Moderate`,
+    financialMetrics: {
+      totalVoyageCost: `$${costB.toLocaleString()}`,
+      fuelBunkeringCost: `$${Math.round(costB * 0.45).toLocaleString()}`,
+      canalTolls: `$${Math.round(costB * 0.16).toLocaleString()}`,
+      delaySurcharge: `$12,400`,
+      netSavings: `+$${savingsB.toLocaleString()}`
+    },
+    timeMetrics: {
+      transitDays: `${etaDaysB} days`,
+      speedKnots: `14.2 kn`,
+      canalWaitHours: `12.5 hrs`,
+      etaDelta: `+${delayB} hrs`
+    },
+    safetyMetrics: {
+      overallRisk: `Moderate (12.4%)`,
+      threatIndex: 32,
+      maxWaveHeight: `3.8m`,
+      chokepointExposure: `Malacca / Red Sea Coastal`
+    },
+    environmentalMetrics: {
+      fuelMt: `${fuelB} MT`,
+      co2EmissionsMt: `${Math.round(fuelB * 3.114)} MT`,
+      ciiRating: `B (Good)`
+    },
+    decisionReasons: {
+      status: 'PAUSE',
+      whyChoose: [
+        `Avoids primary weather congestion front while preserving reasonable arrival window.`,
+        `Provides secondary bunkering option at Fujairah / Colombo.`
+      ],
+      whyPause: [
+        `Keep on STANDBY: Activate if primary route experiences unexpected port congestion >24h.`,
+        `Pause if coastal channel traffic density causes speed reductions below 10 knots.`
+      ],
+      whySkip: [
+        `Skip if total voyage cost exceeds $${Math.round(costB * 1.15).toLocaleString()}.`,
+        `Do not select if vessel requires strict Tier III nitrogen emission compliance.`
+      ]
     }
-  }
+  })
 
-  // Candidate 3 (Alternate 2 — Cape of Good Hope / Deepwater Ocean Highway Bypass)
+  // Candidate 3 (Alternate 2 — Deepwater Ocean Highway / Cape Bypass — ALT-C)
   const waypointsC = resolveBypassRoute(originKey, destKey, 2)
-  if (waypointsC.length > 1) {
-    const nmC = routeDistanceNm(waypointsC)
-    const nmB = reroutes[1] ? routeDistanceNm(reroutes[1].waypoints) : primaryNm
+  const nmC = waypointsC.length > 1 ? routeDistanceNm(waypointsC) : Math.round(primaryNm * 1.38)
+  const delayC = Math.max(6.8, ((nmC - primaryNm) / 14)).toFixed(1)
+  const costC = Math.round(nmC * 4.8)
+  const savingsC = Math.round(primaryNm * 7.8 - costC)
+  const etaDaysC = Math.max(1, Math.round(nmC / (13.8 * 24)))
+  const fuelC = Math.round(nmC * 0.042)
 
-    if (isSubstantiallyDifferent(primaryNm, nmC) && isSubstantiallyDifferent(nmB, nmC)) {
-      const delayC = Math.max(6.8, ((nmC - primaryNm) / 14)).toFixed(1)
-      const costC = Math.round(nmC * 4.8)
-      const baselineLoss = Math.round(primaryNm * 7.8)
-      const savingsC = Math.round(baselineLoss - costC)
-      const etaDaysC = Math.max(1, Math.round(nmC / (13.8 * 24)))
-
-      reroutes.push({
-        id: 'C',
-        label: `Deepwater Ocean Highway Bypass (ALT-C)`,
-        detail: `Cape of Good Hope / Outer Ocean detour with maximum clearance.`,
-        eta: `+${delayC}h delay`,
-        cost: `$${costC.toLocaleString()}`,
-        savings: savingsC >= 0 ? `+$${savingsC.toLocaleString()}` : `-$${Math.abs(savingsC).toLocaleString()}`,
-        risk: `6.1%`,
-        distance: `${nmC.toLocaleString()} nm`,
-        recommended: false,
-        waypoints: waypointsC,
-        corridorSteps: [origName, 'Sunda / Lombok Strait', 'Cape of Good Hope', destName],
-        etaDays: `${etaDaysC} days`,
-        fuelImpact: `+28%`,
-        riskLevel: `Minimal (Safe)`
-      })
+  reroutes.push({
+    id: 'C',
+    label: `Deepwater Ocean Highway Bypass (ALT-C)`,
+    detail: `Cape of Good Hope / Outer Ocean detour with maximum clearance & zero chokepoint exposure.`,
+    eta: `+${delayC}h delay`,
+    cost: `$${costC.toLocaleString()}`,
+    savings: savingsC >= 0 ? `+$${savingsC.toLocaleString()}` : `-$${Math.abs(savingsC).toLocaleString()}`,
+    risk: `6.1%`,
+    distance: `${nmC.toLocaleString()} nm`,
+    recommended: false,
+    waypoints: waypointsC.length > 1 ? waypointsC : primaryWaypoints,
+    corridorSteps: [origName, 'Sunda / Lombok Strait', 'Cape of Good Hope', destName],
+    etaDays: `${etaDaysC} days`,
+    fuelImpact: `+24%`,
+    riskLevel: `Low (High Clearance)`,
+    financialMetrics: {
+      totalVoyageCost: `$${costC.toLocaleString()}`,
+      fuelBunkeringCost: `$${Math.round(costC * 0.58).toLocaleString()}`,
+      canalTolls: `$0 (Canal Bypass)`,
+      delaySurcharge: `$38,500`,
+      netSavings: savingsC >= 0 ? `+$${savingsC.toLocaleString()}` : `-$${Math.abs(savingsC).toLocaleString()}`
+    },
+    timeMetrics: {
+      transitDays: `${etaDaysC} days`,
+      speedKnots: `15.5 kn`,
+      canalWaitHours: `0.0 hrs (Zero Wait)`,
+      etaDelta: `+${delayC} hrs`
+    },
+    safetyMetrics: {
+      overallRisk: `Low (6.1% High Clearance)`,
+      threatIndex: 12,
+      maxWaveHeight: `5.2m (Cape Swells)`,
+      chokepointExposure: `Zero Chokepoint (Cape Bypass)`
+    },
+    environmentalMetrics: {
+      fuelMt: `${fuelC} MT`,
+      co2EmissionsMt: `${Math.round(fuelC * 3.114)} MT`,
+      ciiRating: `C (Moderate)`
+    },
+    decisionReasons: {
+      status: 'SKIP',
+      whyChoose: [
+        `Completely bypasses Suez Canal / Bab-el-Mandeb geopolitical threat zones ($0 Canal Tolls).`,
+        `Maximum safety clearance for high-value sensitive cargo ($120M+ value).`
+      ],
+      whyPause: [
+        `Put on HOLD if Suez Canal suffers complete prolonged blockage (>7 days).`
+      ],
+      whySkip: [
+        `SKIP / BYPASS: Adds +${delayC} hours (+${etaDaysC - etaDaysA} days) to transit duration.`,
+        `High fuel consumption (${fuelC} MT HFO, +24% increase) degrades CII rating to 'C'.`,
+        `Highest voyage cost ($${costC.toLocaleString()}) due to Cape bunkering distance.`
+      ]
     }
-  }
+  })
 
   return { originKey, destKey, primaryWaypoints, primaryNm, reroutes }
 }
