@@ -130,6 +130,10 @@ export const PORT_APPROACH_PATHS: Record<string, { entryNode: string; channel: [
   'Jawaharlal Nehru Port (Mumbai, IN)': {
     entryNode: 'N_ARABIAN_EAST',
     channel: [[18.95, 72.95], [18.50, 72.50], [17.50, 72.00], [16.00, 71.00]]
+  },
+  'Port of Chittagong (BD)': {
+    entryNode: 'N_BAY_OF_BENGAL_MID',
+    channel: [[22.33, 91.82], [21.80, 91.50], [20.50, 90.80], [18.00, 89.50]]
   }
 }
 
@@ -146,15 +150,20 @@ export const SEA_NODES: Record<string, [number, number]> = {
   'N_LUZON_BASHI':         [20.50, 121.80],
   'N_PHILIPPINE_SEA_N':    [24.00, 128.00],
   'N_PHILIPPINE_SEA_MID':  [18.00, 130.00],
+  'N_PHILIPPINE_SEA_OUTER': [15.00, 135.00],
+  'N_PACIFIC_OUTER_E':     [20.00, 145.00],
   'N_SCS_NORTH':           [21.50, 117.50],
   'N_SCS_MID':             [15.00, 114.00],
   'N_SCS_SOUTH':           [6.50, 109.50],
 
-  // Southeast Asia & Malacca
+  // Southeast Asia & Malacca / Indonesia
   'N_MALACCA_S':           [1.25, 104.10],
   'N_MALACCA_M':           [2.50, 101.80],
   'N_MALACCA_N':           [5.50, 97.50],
   'N_SUNDA_STRAIT':        [-5.90, 105.80],
+  'N_LOMBOK_STRAIT':       [-9.00, 115.50],
+  'N_MAKASSAR_STRAIT':     [0.00, 118.50],
+  'N_CELEBES_SEA':         [4.00, 122.00],
 
   // Indian Ocean & Bay of Bengal (Guaranteed open-water route around Sri Lanka)
   'N_ANDAMAN_SEA':         [7.50, 93.50],
@@ -166,13 +175,19 @@ export const SEA_NODES: Record<string, [number, number]> = {
   'N_GULF_OF_OMAN':        [24.50, 58.50],
   'N_BAB_EL_MANDEB':       [12.50, 43.50],
   'N_RED_SEA_MID':         [20.00, 38.50],
+  'N_INDIAN_OCEAN_SOUTH':  [-28.00, 65.00],
 
-  // Suez & Mediterranean
+  // Suez, Cape of Good Hope & Mediterranean
   'N_SUEZ_SOUTH':          [29.90, 32.55],
   'N_SUEZ_NORTH':          [31.35, 32.35],
   'N_MEDITERRANEAN_EAST':   [33.50, 30.00],
   'N_MEDITERRANEAN_MID':    [36.00, 18.00],
   'N_GIBRALTAR_EAST':      [36.00, -4.50],
+
+  // Cape of Good Hope Bypass Nodes (100% Water Around Africa)
+  'N_CAPE_TOWN_OFFSHORE':  [-36.00, 18.00],
+  'N_EQUATORIAL_ATLANTIC': [0.00, -15.00],
+  'N_ATLANTIC_MID':        [22.00, -25.00],
 
   // North Europe & English Channel
   'N_BAY_OF_BISCAY':       [45.00, -7.00],
@@ -186,29 +201,34 @@ export const SEA_NODES: Record<string, [number, number]> = {
 // 4. Graph Connections — Strictly Water Edges (Zero Overland Edges)
 // ---------------------------------------------------------------------------
 const SEA_GRAPH: Record<string, string[]> = {
-  'N_JAPAN_SOUTH':         ['N_JAPAN_EAST', 'N_KOREA_STRAIT', 'N_PHILIPPINE_SEA_N', 'N_TAIWAN_STRAIT_N'],
-  'N_JAPAN_EAST':          ['N_JAPAN_SOUTH', 'N_PHILIPPINE_SEA_N'],
+  'N_JAPAN_SOUTH':         ['N_JAPAN_EAST', 'N_KOREA_STRAIT', 'N_PHILIPPINE_SEA_N', 'N_TAIWAN_STRAIT_N', 'N_PACIFIC_OUTER_E'],
+  'N_JAPAN_EAST':          ['N_JAPAN_SOUTH', 'N_PHILIPPINE_SEA_N', 'N_PACIFIC_OUTER_E'],
   'N_KOREA_STRAIT':        ['N_JAPAN_SOUTH', 'N_TAIWAN_STRAIT_N', 'N_SCS_NORTH'],
   'N_TAIWAN_STRAIT_N':     ['N_JAPAN_SOUTH', 'N_KOREA_STRAIT', 'N_TAIWAN_STRAIT_S', 'N_PHILIPPINE_SEA_N'],
   'N_TAIWAN_STRAIT_S':     ['N_TAIWAN_STRAIT_N', 'N_LUZON_BASHI', 'N_SCS_NORTH'],
   'N_LUZON_BASHI':         ['N_TAIWAN_STRAIT_S', 'N_PHILIPPINE_SEA_MID', 'N_SCS_NORTH'],
-  'N_PHILIPPINE_SEA_N':    ['N_JAPAN_SOUTH', 'N_PHILIPPINE_SEA_MID', 'N_TAIWAN_STRAIT_N'],
-  'N_PHILIPPINE_SEA_MID':  ['N_PHILIPPINE_SEA_N', 'N_LUZON_BASHI', 'N_SCS_SOUTH'],
+  'N_PHILIPPINE_SEA_N':    ['N_JAPAN_SOUTH', 'N_PHILIPPINE_SEA_MID', 'N_TAIWAN_STRAIT_N', 'N_PACIFIC_OUTER_E'],
+  'N_PHILIPPINE_SEA_MID':  ['N_PHILIPPINE_SEA_N', 'N_LUZON_BASHI', 'N_SCS_SOUTH', 'N_PHILIPPINE_SEA_OUTER', 'N_CELEBES_SEA'],
+  'N_PHILIPPINE_SEA_OUTER': ['N_PHILIPPINE_SEA_MID', 'N_PACIFIC_OUTER_E'],
+  'N_PACIFIC_OUTER_E':     ['N_PHILIPPINE_SEA_OUTER', 'N_PHILIPPINE_SEA_N', 'N_JAPAN_SOUTH'],
   'N_SCS_NORTH':           ['N_TAIWAN_STRAIT_S', 'N_LUZON_BASHI', 'N_SCS_MID'],
   'N_SCS_MID':             ['N_SCS_NORTH', 'N_SCS_SOUTH'],
   'N_SCS_SOUTH':           ['N_SCS_MID', 'N_MALACCA_S', 'N_SUNDA_STRAIT'],
   'N_MALACCA_S':           ['N_SCS_SOUTH', 'N_MALACCA_M'],
   'N_MALACCA_M':           ['N_MALACCA_S', 'N_MALACCA_N'],
   'N_MALACCA_N':           ['N_MALACCA_M', 'N_ANDAMAN_SEA'],
-  'N_SUNDA_STRAIT':        ['N_SCS_SOUTH', 'N_SRI_LANKA_SOUTH'],
+  'N_SUNDA_STRAIT':        ['N_SCS_SOUTH', 'N_SRI_LANKA_SOUTH', 'N_LOMBOK_STRAIT', 'N_INDIAN_OCEAN_SOUTH'],
+  'N_LOMBOK_STRAIT':       ['N_SUNDA_STRAIT', 'N_INDIAN_OCEAN_SOUTH', 'N_MAKASSAR_STRAIT'],
+  'N_MAKASSAR_STRAIT':     ['N_LOMBOK_STRAIT', 'N_CELEBES_SEA'],
+  'N_CELEBES_SEA':         ['N_MAKASSAR_STRAIT', 'N_PHILIPPINE_SEA_MID'],
   'N_ANDAMAN_SEA':         ['N_MALACCA_N', 'N_BAY_OF_BENGAL_MID', 'N_SRI_LANKA_SOUTH'],
 
   // BAY OF BENGAL & INDIA (Strict open-water routing around India & Sri Lanka)
   'N_BAY_OF_BENGAL_MID':   ['N_ANDAMAN_SEA', 'N_SRI_LANKA_SOUTH'],
-  'N_SRI_LANKA_SOUTH':     ['N_BAY_OF_BENGAL_MID', 'N_ANDAMAN_SEA', 'N_INDIA_SOUTH_WEST', 'N_ARABIAN_MID'],
+  'N_SRI_LANKA_SOUTH':     ['N_BAY_OF_BENGAL_MID', 'N_ANDAMAN_SEA', 'N_INDIA_SOUTH_WEST', 'N_ARABIAN_MID', 'N_SUNDA_STRAIT', 'N_INDIAN_OCEAN_SOUTH'],
   'N_INDIA_SOUTH_WEST':    ['N_SRI_LANKA_SOUTH', 'N_ARABIAN_EAST'],
   'N_ARABIAN_EAST':        ['N_INDIA_SOUTH_WEST', 'N_ARABIAN_MID', 'N_GULF_OF_OMAN'],
-  'N_ARABIAN_MID':         ['N_ARABIAN_EAST', 'N_SRI_LANKA_SOUTH', 'N_GULF_OF_OMAN', 'N_BAB_EL_MANDEB'],
+  'N_ARABIAN_MID':         ['N_ARABIAN_EAST', 'N_SRI_LANKA_SOUTH', 'N_GULF_OF_OMAN', 'N_BAB_EL_MANDEB', 'N_INDIAN_OCEAN_SOUTH'],
   'N_GULF_OF_OMAN':        ['N_ARABIAN_EAST', 'N_ARABIAN_MID'],
   'N_BAB_EL_MANDEB':       ['N_ARABIAN_MID', 'N_RED_SEA_MID'],
   'N_RED_SEA_MID':         ['N_BAB_EL_MANDEB', 'N_SUEZ_SOUTH'],
@@ -217,7 +237,15 @@ const SEA_GRAPH: Record<string, string[]> = {
   'N_MEDITERRANEAN_EAST':   ['N_SUEZ_NORTH', 'N_MEDITERRANEAN_MID'],
   'N_MEDITERRANEAN_MID':    ['N_MEDITERRANEAN_EAST', 'N_GIBRALTAR_EAST'],
   'N_GIBRALTAR_EAST':      ['N_MEDITERRANEAN_MID', 'N_BAY_OF_BISCAY'],
-  'N_BAY_OF_BISCAY':       ['N_GIBRALTAR_EAST', 'N_ENGLISH_CHANNEL_W'],
+
+  // CAPE OF GOOD HOPE ROUTE (100% Water around Africa for Suez detour)
+  'N_INDIAN_OCEAN_SOUTH':  ['N_SRI_LANKA_SOUTH', 'N_ARABIAN_MID', 'N_SUNDA_STRAIT', 'N_CAPE_TOWN_OFFSHORE'],
+  'N_CAPE_TOWN_OFFSHORE':  ['N_INDIAN_OCEAN_SOUTH', 'N_EQUATORIAL_ATLANTIC'],
+  'N_EQUATORIAL_ATLANTIC': ['N_CAPE_TOWN_OFFSHORE', 'N_ATLANTIC_MID'],
+  'N_ATLANTIC_MID':        ['N_EQUATORIAL_ATLANTIC', 'N_BAY_OF_BISCAY'],
+
+  // North Europe & English Channel
+  'N_BAY_OF_BISCAY':       ['N_GIBRALTAR_EAST', 'N_ENGLISH_CHANNEL_W', 'N_ATLANTIC_MID'],
   'N_ENGLISH_CHANNEL_W':   ['N_BAY_OF_BISCAY', 'N_ENGLISH_CHANNEL_E'],
   'N_ENGLISH_CHANNEL_E':   ['N_ENGLISH_CHANNEL_W', 'N_NORTH_SEA_SOUTH'],
   'N_NORTH_SEA_SOUTH':     ['N_ENGLISH_CHANNEL_E', 'N_NORTH_SEA_GERMAN_BIGHT'],
@@ -408,11 +436,17 @@ export function resolveBypassRoute(
   // Construct node exclusion set for Dijkstra based on variantIndex
   const excluded = new Set<string>()
   if (variantIndex === 1) {
-    excluded.add(primaryNodePath[1])
+    // Exclude major canal / strait node if present (e.g. Suez, Malacca, Taiwan Strait)
+    const midIndex = Math.floor(primaryNodePath.length / 2)
+    excluded.add(primaryNodePath[midIndex])
   } else if (variantIndex === 2) {
-    excluded.add(primaryNodePath[1])
-    if (primaryNodePath.length > 3) excluded.add(primaryNodePath[2])
+    // Exclude Suez Canal or Malacca Strait nodes specifically
+    excluded.add('N_SUEZ_NORTH')
+    excluded.add('N_SUEZ_SOUTH')
+    excluded.add('N_MALACCA_M')
+    excluded.add('N_TAIWAN_STRAIT_N')
   } else {
+    // Exclude inner channels to force outer deepwater ocean highway
     for (let i = 1; i < primaryNodePath.length - 1; i++) {
       excluded.add(primaryNodePath[i])
     }
@@ -527,7 +561,7 @@ export function computeDynamicReroutes(originInput?: string, destInput?: string)
     waypoints: primaryWaypoints
   })
 
-  // Candidate 2 (Alternate 1)
+  // Candidate 2 (Alternate 1 — Coastal / Intermediate Bypass)
   const waypointsB = resolveBypassRoute(originKey, destKey, 1)
   if (waypointsB.length > 1) {
     const nmB = routeDistanceNm(waypointsB)
@@ -553,8 +587,8 @@ export function computeDynamicReroutes(originInput?: string, destInput?: string)
     }
   }
 
-  // Candidate 3 (Alternate 2)
-  const waypointsC = resolveBypassRoute(originKey, destKey, 3)
+  // Candidate 3 (Alternate 2 — Cape of Good Hope / Deepwater Ocean Highway Bypass)
+  const waypointsC = resolveBypassRoute(originKey, destKey, 2)
   if (waypointsC.length > 1) {
     const nmC = routeDistanceNm(waypointsC)
     const nmB = reroutes[1] ? routeDistanceNm(reroutes[1].waypoints) : primaryNm
@@ -567,8 +601,8 @@ export function computeDynamicReroutes(originInput?: string, destInput?: string)
 
       reroutes.push({
         id: 'C',
-        label: `Deepwater Offshore Safeguard (ALT-C)`,
-        detail: `Extended open ocean detour for maximum storm clearance.`,
+        label: `Deepwater Ocean Highway Bypass (ALT-C)`,
+        detail: `Cape of Good Hope / Outer Ocean detour with maximum clearance.`,
         eta: `+${delayC}h delay`,
         cost: `$${costC.toLocaleString()}`,
         savings: savingsC >= 0 ? `+$${savingsC.toLocaleString()}` : `-$${Math.abs(savingsC).toLocaleString()}`,
