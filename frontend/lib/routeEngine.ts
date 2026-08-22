@@ -62,7 +62,7 @@ export const PORT_COORDS: Record<string, [number, number]> = {
   'Port Said — Suez Canal Gateway (EG)': [31.26, 32.31],
   'Port of Piraeus (GR)':               [37.94, 23.63],
   'Port of Algeciras (ES)':             [36.13, -5.45],
-  'Port of Genoa (IT)': fontStyle: 'italic', [44.41, 8.93],
+  'Port of Genoa (IT)':                 [44.41, 8.93],
   'Port of Valencia (ES)':              [39.45, -0.34],
   'Port of Istanbul (TR)':              [41.04, 28.98],
 
