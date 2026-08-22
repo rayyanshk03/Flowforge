@@ -363,6 +363,61 @@ export default function NetworkPage() {
                     </div>
                   </div>
 
+                  {/* Vertical Route Stepper Structure requested by User */}
+                  <div className="rounded border border-stone-300 bg-white p-3 font-mono text-xs space-y-2.5">
+                    <div className="flex items-center justify-between border-b border-stone-200 pb-2">
+                      <span className="font-black text-[#D94E28] uppercase text-[10px] flex items-center gap-1">
+                        {r.recommended ? 'Recommended Route ⭐' : `Route Option (ALT-${r.id})`}
+                      </span>
+                      {r.recommended && (
+                        <span className="text-[9px] font-black text-[#047857] bg-emerald-100 border border-[#047857] px-1.5 py-0.5 rounded">
+                          OPTIMAL
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Stepper Tree */}
+                    <div className="py-1 space-y-0.5">
+                      {r.corridorSteps?.map((step, idx) => (
+                        <React.Fragment key={idx}>
+                          <div className="flex items-center gap-2 font-black text-stone-900 text-[11px]">
+                            <span className={`size-2.5 rounded-full shrink-0 ${
+                              idx === 0
+                                ? 'bg-stone-900 ring-2 ring-stone-300'
+                                : idx === r.corridorSteps.length - 1
+                                ? 'bg-[#047857] ring-2 ring-emerald-200'
+                                : 'bg-[#D94E28] ring-2 ring-orange-200'
+                            }`} />
+                            <span className="truncate">{step}</span>
+                          </div>
+                          {idx < r.corridorSteps.length - 1 && (
+                            <div className="ml-1 pl-3 border-l-2 border-dashed border-stone-300 py-1 text-[10px] text-stone-400 font-mono">
+                              │
+                            </div>
+                          )}
+                        </React.Fragment>
+                      ))}
+                    </div>
+
+                    {/* Metrics Footer Grid */}
+                    <div className="grid grid-cols-3 gap-1.5 border-t border-stone-200 pt-2 text-[10px] text-center font-mono font-bold">
+                      <div className="bg-[#F4F2EC] rounded p-1.5 border border-stone-300">
+                        <span className="text-stone-500 block text-[9px]">ETA:</span>
+                        <strong className="text-stone-900 block text-[11px]">{r.etaDays}</strong>
+                      </div>
+                      <div className="bg-[#F4F2EC] rounded p-1.5 border border-stone-300">
+                        <span className="text-stone-500 block text-[9px]">Fuel:</span>
+                        <strong className={r.fuelImpact.startsWith('-') ? 'text-[#047857] block text-[11px]' : 'text-amber-800 block text-[11px]'}>
+                          {r.fuelImpact}
+                        </strong>
+                      </div>
+                      <div className="bg-[#F4F2EC] rounded p-1.5 border border-stone-300">
+                        <span className="text-stone-500 block text-[9px]">Risk:</span>
+                        <strong className="text-stone-900 block text-[11px]">{r.riskLevel}</strong>
+                      </div>
+                    </div>
+                  </div>
+
                   {r.recommended && (
                     <div className="text-[11px] text-[#047857] font-black flex items-center gap-1.5 border-t border-emerald-200 pt-2 font-mono">
                       <CheckCircle2 className="size-3.5" />

@@ -505,6 +505,10 @@ export interface DynamicRerouteOption {
   distance: string
   recommended: boolean
   waypoints: [number, number][]
+  corridorSteps: string[]
+  etaDays: string
+  fuelImpact: string
+  riskLevel: string
 }
 
 export function findPortKey(inputName?: string, fallbackKey: string = 'Shanghai Yangshan Port (CN)'): string {
@@ -612,7 +616,12 @@ export function computeDynamicReroutes(originInput?: string, destInput?: string)
   const primaryWaypoints = resolveRoute(originKey, destKey)
   const primaryNm = routeDistanceNm(primaryWaypoints) || 1250
 
+  const origName = originKey.split(' ')[0].replace(/[^a-zA-Z]/g, '') || 'Shanghai'
+  const destName = destKey.split(' ')[0].replace(/[^a-zA-Z]/g, '') || 'Rotterdam'
+
   const reroutes: DynamicRerouteOption[] = []
+
+  const etaDaysA = Math.max(1, Math.round(primaryNm / (13.8 * 24)))
 
   // Candidate 1 (Primary / Recommended)
   reroutes.push({
@@ -625,7 +634,11 @@ export function computeDynamicReroutes(originInput?: string, destInput?: string)
     risk: `8.2%`,
     distance: `${primaryNm.toLocaleString()} nm`,
     recommended: true,
-    waypoints: primaryWaypoints
+    waypoints: primaryWaypoints,
+    corridorSteps: [origName, 'Singapore Hub', 'Suez Canal Pass', destName],
+    etaDays: `${etaDaysA} days`,
+    fuelImpact: `-18%`,
+    riskLevel: `Low`
   })
 
   // Candidate 2 (Alternate 1 — Coastal / Intermediate Bypass)
@@ -638,6 +651,7 @@ export function computeDynamicReroutes(originInput?: string, destInput?: string)
       const costB = Math.round(nmB * 4.4)
       const baselineLoss = Math.round(primaryNm * 7.8)
       const savingsB = Math.max(500, baselineLoss - costB)
+      const etaDaysB = Math.max(1, Math.round(nmB / (13.8 * 24)))
 
       reroutes.push({
         id: 'B',
@@ -649,7 +663,11 @@ export function computeDynamicReroutes(originInput?: string, destInput?: string)
         risk: `12.4%`,
         distance: `${nmB.toLocaleString()} nm`,
         recommended: false,
-        waypoints: waypointsB
+        waypoints: waypointsB,
+        corridorSteps: [origName, 'Malacca Channel', 'Red Sea Coastal Fairway', destName],
+        etaDays: `${etaDaysB} days`,
+        fuelImpact: `+6%`,
+        riskLevel: `Moderate`
       })
     }
   }
@@ -665,6 +683,7 @@ export function computeDynamicReroutes(originInput?: string, destInput?: string)
       const costC = Math.round(nmC * 4.8)
       const baselineLoss = Math.round(primaryNm * 7.8)
       const savingsC = Math.round(baselineLoss - costC)
+      const etaDaysC = Math.max(1, Math.round(nmC / (13.8 * 24)))
 
       reroutes.push({
         id: 'C',
@@ -676,7 +695,11 @@ export function computeDynamicReroutes(originInput?: string, destInput?: string)
         risk: `6.1%`,
         distance: `${nmC.toLocaleString()} nm`,
         recommended: false,
-        waypoints: waypointsC
+        waypoints: waypointsC,
+        corridorSteps: [origName, 'Sunda / Lombok Strait', 'Cape of Good Hope', destName],
+        etaDays: `${etaDaysC} days`,
+        fuelImpact: `+28%`,
+        riskLevel: `Minimal (Safe)`
       })
     }
   }
