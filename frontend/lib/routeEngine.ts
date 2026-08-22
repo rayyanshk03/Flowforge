@@ -159,8 +159,8 @@ export const SEA_NODES: Record<string, [number, number]> = {
   // Indian Ocean & Bay of Bengal (Guaranteed open-water route around Sri Lanka)
   'N_ANDAMAN_SEA':         [7.50, 93.50],
   'N_BAY_OF_BENGAL_MID':   [12.00, 86.00],
-  'N_SRI_LANKA_SOUTH':     [5.50, 80.50],        // Strictly south of Dondra Head / Sri Lanka
-  'N_INDIA_SOUTH_WEST':    [7.80, 76.50],        // Strictly off Trivandrum in Arabian Sea
+  'N_SRI_LANKA_SOUTH':     [5.20, 80.50],        // Strictly south of Dondra Head / Sri Lanka in open ocean
+  'N_INDIA_SOUTH_WEST':    [7.80, 76.50],        // Strictly off Kanyakumari / Trivandrum in Arabian Sea
   'N_ARABIAN_EAST':        [16.00, 71.00],       // Off Mumbai
   'N_ARABIAN_MID':         [15.00, 64.00],
   'N_GULF_OF_OMAN':        [24.50, 58.50],
@@ -307,7 +307,12 @@ export function dijkstra(startNode: string, targetNode: string, excludedNodes?: 
       break
     }
   }
-  return path.length > 1 && path[0] === startNode ? path : [startNode, targetNode]
+
+  // GUARANTEE ZERO LAND OVERLAP: Never return disconnected straight-line fallback!
+  if (path.length > 1 && path[0] === startNode) {
+    return path
+  }
+  return [] // Return empty if no connected sea path exists!
 }
 
 // Subdivide waypoints smoothly for Leaflet polylines
@@ -375,7 +380,7 @@ export function resolveRoute(originName: string, destinationName: string): [numb
 /**
  * Calculates a 100% open-water alternative detour (Plan B / Weather Bypass)
  * using Dijkstra graph node exclusions over verified bathymetric sea nodes.
- * GUARANTEES ZERO LAND OVERLAP.
+ * GUARANTEES ZERO LAND OVERLAP. RETURNS EMPTY IF NO ALTERNATIVE SEA ROUTE EXISTS.
  */
 export function resolveBypassRoute(
   originName: string,
@@ -398,27 +403,27 @@ export function resolveBypassRoute(
   // Find baseline shortest path node list
   const primaryNodePath = dijkstra(startSeaNode, endSeaNode)
 
+  if (primaryNodePath.length <= 2) return []
+
   // Construct node exclusion set for Dijkstra based on variantIndex
   const excluded = new Set<string>()
-  if (primaryNodePath.length > 2) {
-    if (variantIndex === 1) {
-      excluded.add(primaryNodePath[1])
-    } else if (variantIndex === 2) {
-      excluded.add(primaryNodePath[1])
-      if (primaryNodePath.length > 3) excluded.add(primaryNodePath[2])
-    } else {
-      for (let i = 1; i < primaryNodePath.length - 1; i++) {
-        excluded.add(primaryNodePath[i])
-      }
+  if (variantIndex === 1) {
+    excluded.add(primaryNodePath[1])
+  } else if (variantIndex === 2) {
+    excluded.add(primaryNodePath[1])
+    if (primaryNodePath.length > 3) excluded.add(primaryNodePath[2])
+  } else {
+    for (let i = 1; i < primaryNodePath.length - 1; i++) {
+      excluded.add(primaryNodePath[i])
     }
   }
 
   // Calculate new 100% open-water Dijkstra path with exclusions
-  let bypassNodePath = dijkstra(startSeaNode, endSeaNode, excluded)
+  const bypassNodePath = dijkstra(startSeaNode, endSeaNode, excluded)
 
-  // If graph is disconnected by exclusions, return primary path
+  // If graph is disconnected by exclusions, return empty array (NO FAKE OVERLAND DETOURS)
   if (bypassNodePath.length <= 1) {
-    bypassNodePath = primaryNodePath
+    return []
   }
 
   const rawWaypoints: [number, number][] = []
@@ -512,7 +517,7 @@ export function computeDynamicReroutes(originInput?: string, destInput?: string)
   reroutes.push({
     id: 'A',
     label: `Direct Bathymetric Corridor (Primary)`,
-    detail: `Optimal open-water Dijkstra path between pier anchors.`,
+    detail: `Optimal 100% open-water Dijkstra path between pier anchors.`,
     eta: `Baseline`,
     cost: `$${Math.round(primaryNm * 4.2).toLocaleString()}`,
     savings: `+$0 (Baseline)`,
@@ -524,50 +529,55 @@ export function computeDynamicReroutes(originInput?: string, destInput?: string)
 
   // Candidate 2 (Alternate 1)
   const waypointsB = resolveBypassRoute(originKey, destKey, 1)
-  const nmB = routeDistanceNm(waypointsB)
+  if (waypointsB.length > 1) {
+    const nmB = routeDistanceNm(waypointsB)
 
-  if (isSubstantiallyDifferent(primaryNm, nmB)) {
-    const delayB = Math.max(2.5, ((nmB - primaryNm) / 14)).toFixed(1)
-    const costB = Math.round(nmB * 4.4)
-    const baselineLoss = Math.round(primaryNm * 7.8)
-    const savingsB = Math.max(500, baselineLoss - costB)
+    if (isSubstantiallyDifferent(primaryNm, nmB)) {
+      const delayB = Math.max(2.5, ((nmB - primaryNm) / 14)).toFixed(1)
+      const costB = Math.round(nmB * 4.4)
+      const baselineLoss = Math.round(primaryNm * 7.8)
+      const savingsB = Math.max(500, baselineLoss - costB)
 
-    reroutes.push({
-      id: 'B',
-      label: `Coastal Channel Bypass (ALT-B)`,
-      detail: `Secondary fairways avoiding central weather congestion.`,
-      eta: `+${delayB}h delay`,
-      cost: `$${costB.toLocaleString()}`,
-      savings: `+$${savingsB.toLocaleString()}`,
-      risk: `12.4%`,
-      distance: `${nmB.toLocaleString()} nm`,
-      recommended: false,
-      waypoints: waypointsB
-    })
+      reroutes.push({
+        id: 'B',
+        label: `Coastal Channel Bypass (ALT-B)`,
+        detail: `Secondary open-water fairways avoiding central weather congestion.`,
+        eta: `+${delayB}h delay`,
+        cost: `$${costB.toLocaleString()}`,
+        savings: `+$${savingsB.toLocaleString()}`,
+        risk: `12.4%`,
+        distance: `${nmB.toLocaleString()} nm`,
+        recommended: false,
+        waypoints: waypointsB
+      })
+    }
   }
 
   // Candidate 3 (Alternate 2)
   const waypointsC = resolveBypassRoute(originKey, destKey, 3)
-  const nmC = routeDistanceNm(waypointsC)
+  if (waypointsC.length > 1) {
+    const nmC = routeDistanceNm(waypointsC)
+    const nmB = reroutes[1] ? routeDistanceNm(reroutes[1].waypoints) : primaryNm
 
-  if (isSubstantiallyDifferent(primaryNm, nmC) && isSubstantiallyDifferent(nmB, nmC)) {
-    const delayC = Math.max(6.8, ((nmC - primaryNm) / 14)).toFixed(1)
-    const costC = Math.round(nmC * 4.8)
-    const baselineLoss = Math.round(primaryNm * 7.8)
-    const savingsC = Math.round(baselineLoss - costC)
+    if (isSubstantiallyDifferent(primaryNm, nmC) && isSubstantiallyDifferent(nmB, nmC)) {
+      const delayC = Math.max(6.8, ((nmC - primaryNm) / 14)).toFixed(1)
+      const costC = Math.round(nmC * 4.8)
+      const baselineLoss = Math.round(primaryNm * 7.8)
+      const savingsC = Math.round(baselineLoss - costC)
 
-    reroutes.push({
-      id: 'C',
-      label: `Deepwater Offshore Safeguard (ALT-C)`,
-      detail: `Extended open ocean detour for maximum storm clearance.`,
-      eta: `+${delayC}h delay`,
-      cost: `$${costC.toLocaleString()}`,
-      savings: savingsC >= 0 ? `+$${savingsC.toLocaleString()}` : `-$${Math.abs(savingsC).toLocaleString()}`,
-      risk: `6.1%`,
-      distance: `${nmC.toLocaleString()} nm`,
-      recommended: false,
-      waypoints: waypointsC
-    })
+      reroutes.push({
+        id: 'C',
+        label: `Deepwater Offshore Safeguard (ALT-C)`,
+        detail: `Extended open ocean detour for maximum storm clearance.`,
+        eta: `+${delayC}h delay`,
+        cost: `$${costC.toLocaleString()}`,
+        savings: savingsC >= 0 ? `+$${savingsC.toLocaleString()}` : `-$${Math.abs(savingsC).toLocaleString()}`,
+        risk: `6.1%`,
+        distance: `${nmC.toLocaleString()} nm`,
+        recommended: false,
+        waypoints: waypointsC
+      })
+    }
   }
 
   return { originKey, destKey, primaryWaypoints, primaryNm, reroutes }
