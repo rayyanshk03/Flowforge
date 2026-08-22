@@ -1,9 +1,11 @@
 'use client'
 
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import 'leaflet/dist/leaflet.css'
 import {
   PORT_COORDS,
+  SEA_NODES,
+  SEA_GRAPH,
   computeDynamicReroutes,
   findPortKey
 } from '@/lib/routeEngine'
@@ -38,6 +40,138 @@ function getInterpolatedVesselPosition(waypoints: [number, number][], t: number)
   if (heading < 0) heading += 360
   return { lat, lng, heading: Math.round(heading) }
 }
+
+// ---------------------------------------------------------------------------
+// Spatial Data Definitions for Environmental & Threat Layers
+// ---------------------------------------------------------------------------
+
+// 1. Ocean Weather Storm & Cyclone Zones
+const WEATHER_ZONES = [
+  {
+    name: 'South China Sea Typhoon Risk Belt',
+    center: [18.0, 116.0] as [number, number],
+    radiusKm: 380,
+    severity: 'Typhoon Force Sea State 8',
+    details: 'Waves 6.8m · Wind 52 kts · Tropical Storm Warning',
+    color: '#0284C7'
+  },
+  {
+    name: 'North Atlantic Deep Depression',
+    center: [52.0, -22.0] as [number, number],
+    radiusKm: 520,
+    severity: 'Severe Winter Gale',
+    details: 'Waves 7.9m · Wind 58 kts · Heavy Swell',
+    color: '#0369A1'
+  },
+  {
+    name: 'Bay of Bengal Monsoon Squall Area',
+    center: [15.0, 88.0] as [number, number],
+    radiusKm: 320,
+    severity: 'Monsoon Depression',
+    details: 'Waves 4.5m · Wind 38 kts · Torrential Rain',
+    color: '#0284C7'
+  },
+  {
+    name: 'Arabian Sea High Swell Sector',
+    center: [16.5, 65.0] as [number, number],
+    radiusKm: 280,
+    severity: 'SW Monsoon Swell',
+    details: 'Waves 4.1m · Wind 32 kts',
+    color: '#0369A1'
+  }
+]
+
+// 2. Geopolitical Threat & Missile Defense Zones
+const RISK_ZONES = [
+  {
+    name: 'Bab el-Mandeb & Red Sea Threat Zone',
+    center: [14.5, 42.5] as [number, number],
+    radiusKm: 290,
+    threat: 'CRITICAL GEOPOLITICAL RISK',
+    details: 'Houthi Anti-Ship Missile & UAV Strike Corridor (Exposure 88%)',
+    color: '#DC2626'
+  },
+  {
+    name: 'Strait of Hormuz Naval Surveillance Zone',
+    center: [26.2, 56.2] as [number, number],
+    radiusKm: 160,
+    threat: 'HIGH RISK SECTOR',
+    details: 'GPS Jamming, Electronic Interception & Boarding Risk',
+    color: '#B91C1C'
+  },
+  {
+    name: 'Taiwan Strait Defense Air Sector',
+    center: [24.2, 119.8] as [number, number],
+    radiusKm: 190,
+    threat: 'EVALUATED MILITARY ZONE',
+    details: 'Naval Live-Fire Exercises & Vessel Tracking Control',
+    color: '#EF4444'
+  }
+]
+
+// 3. Piracy Alert & Armed Skiff High Risk Areas
+const PIRACY_ZONES = [
+  {
+    name: 'Gulf of Aden Piracy Alert Corridor',
+    center: [12.8, 47.8] as [number, number],
+    radiusKm: 260,
+    threat: 'PIRACY ADVISORY (IMB)',
+    details: 'Armed Skiff Attempted Boardings & Mother-Ship Operations',
+    color: '#9333EA'
+  },
+  {
+    name: 'Sulu-Celebes Sea Security Zone',
+    center: [5.8, 121.2] as [number, number],
+    radiusKm: 190,
+    threat: 'MODERATE PIRACY RISK',
+    details: 'Kidnap-for-Ransom & Small Craft Interception Area',
+    color: '#A855F7'
+  },
+  {
+    name: 'Gulf of Guinea Offshore Piracy Zone',
+    center: [3.2, 5.2] as [number, number],
+    radiusKm: 340,
+    threat: 'CRITICAL PIRACY ZONE',
+    details: 'Deepwater Vessel Attack & Crew Hijacking Sector',
+    color: '#7E22CE'
+  }
+]
+
+// 4. Port Anchorage Congestion Heat Areas
+const CONGESTION_ZONES = [
+  {
+    name: 'Singapore Outer Anchorage Congestion',
+    center: [1.20, 103.95] as [number, number],
+    radiusKm: 90,
+    status: 'HIGH ANCHORAGE DENSITY',
+    details: '118 Container Vessels Anchored · 38.4h Average Waiting Time',
+    color: '#D97706'
+  },
+  {
+    name: 'Ningbo-Zhoushan Anchorage Overflow',
+    center: [29.80, 122.35] as [number, number],
+    radiusKm: 110,
+    status: 'CONGESTED ANCHORAGE',
+    details: '94 Vessels Waiting · Berth Delays +44h',
+    color: '#F59E0B'
+  },
+  {
+    name: 'Rotterdam Maasvlakte Roads',
+    center: [52.05, 3.85] as [number, number],
+    radiusKm: 75,
+    status: 'MODERATE QUEUE',
+    details: '36 Vessels Pending Entry Clearance',
+    color: '#D97706'
+  },
+  {
+    name: 'Jebel Ali Anchorage Sector',
+    center: [25.15, 54.85] as [number, number],
+    radiusKm: 65,
+    status: 'MODERATE ANCHORAGE CONGESTION',
+    details: '24 Container Vessels Waiting',
+    color: '#F59E0B'
+  }
+]
 
 export type RouteDetail = {
   id: string
@@ -78,6 +212,39 @@ export default function GlobalMap({
   const mapContainerRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<any>(null)
   const layerGroupRef = useRef<any>(null)
+
+  // 9 Toggleable Map Layers State (ALL ENABLED BY DEFAULT)
+  const [layers, setLayers] = useState({
+    ship: true,
+    recommended: true,
+    alternatives: true,
+    seaLanes: true,
+    ports: true,
+    weather: true,
+    risk: true,
+    piracy: true,
+    congestion: true
+  })
+
+  const [panelOpen, setPanelOpen] = useState(false)
+
+  const toggleLayer = (key: keyof typeof layers) => {
+    setLayers((prev) => ({ ...prev, [key]: !prev[key] }))
+  }
+
+  const setAllLayers = (val: boolean) => {
+    setLayers({
+      ship: val,
+      recommended: val,
+      alternatives: val,
+      seaLanes: val,
+      ports: val,
+      weather: val,
+      risk: val,
+      piracy: val,
+      congestion: val
+    })
+  }
 
   // Dynamically compute primary route and all valid open-water reroute options via PostGIS A* model
   const { originKey: actualOriginKey, destKey: actualDestKey, primaryWaypoints, reroutes } = computeDynamicReroutes(
@@ -121,88 +288,237 @@ export default function GlobalMap({
 
       const primary = primaryWaypoints
 
-      // 1. Primary Disrupted Route (Red-Orange dashed line)
-      if (primary.length > 1) {
-        L.polyline(primary, {
-          color: '#D94E28',
-          weight: 2.5,
-          opacity: 0.5,
-          dashArray: '10, 6'
-        }).addTo(group)
-      }
+      // -----------------------------------------------------------------------
+      // LAYER 1: Sea Lanes (Global Bathymetric NavMesh Network)
+      // -----------------------------------------------------------------------
+      if (layers.seaLanes) {
+        const drawnEdges = new Set<string>()
+        Object.entries(SEA_GRAPH).forEach(([sourceNode, targets]) => {
+          const sourceCoords = SEA_NODES[sourceNode]
+          if (!sourceCoords) return
+          targets.forEach((targetNode) => {
+            const targetCoords = SEA_NODES[targetNode]
+            if (!targetCoords) return
+            const edgeId = [sourceNode, targetNode].sort().join('----')
+            if (drawnEdges.has(edgeId)) return
+            drawnEdges.add(edgeId)
 
-      // 2. Render all valid 100% open-water alternate routes
-      reroutes.forEach((r) => {
-        if (!r.waypoints || r.waypoints.length < 2) return
-        const isSelected = r.id === activeReroute
-        const routeColor = r.id === 'A' ? '#10B981' : r.id === 'B' ? '#F59E0B' : '#3B82F6'
-
-        L.polyline(r.waypoints, {
-          color: routeColor,
-          weight: isSelected ? 4.5 : 2.5,
-          opacity: isSelected ? 0.95 : 0.6,
-          dashArray: isSelected ? undefined : '6, 6'
-        }).addTo(group)
-      })
-
-      // 3. Origin Port Pin (Dynamic Coordinates)
-      const originCoords = primary[0] || PORT_COORDS[actualOriginKey] || [30.63, 122.07]
-      const originMarker = L.circleMarker(originCoords, {
-        radius: 8,
-        fillColor: '#1E293B',
-        color: '#FFFFFF',
-        weight: 2,
-        fillOpacity: 1
-      }).addTo(group)
-      originMarker.bindTooltip(`Origin: ${actualOriginKey}`, { permanent: false })
-
-      // 4. Destination Port Pin (Dynamic Coordinates)
-      const destCoords = primary[primary.length - 1] || PORT_COORDS[actualDestKey] || [35.44, 139.64]
-      const destMarker = L.circleMarker(destCoords, {
-        radius: 8,
-        fillColor: '#10B981',
-        color: '#FFFFFF',
-        weight: 2,
-        fillOpacity: 1
-      }).addTo(group)
-      destMarker.bindTooltip(`Destination: ${actualDestKey}`, { permanent: false })
-
-      // 5. Waypoint marker on selected reroute
-      if (selectedReroute && selectedReroute.waypoints.length > 3) {
-        const mid = selectedReroute.waypoints[Math.floor(selectedReroute.waypoints.length / 2)]
-        const color = selectedReroute.recommended ? '#10B981' : '#F59E0B'
-        L.circleMarker(mid, {
-          radius: 5,
-          fillColor: color,
-          color: '#FFFFFF',
-          weight: 1.5,
-          fillOpacity: 0.9
+            L.polyline([sourceCoords, targetCoords], {
+              color: '#64748B',
+              weight: 1.2,
+              opacity: 0.35,
+              dashArray: '4, 4'
+            })
+              .addTo(group)
+              .bindTooltip(`Sea Lane: ${sourceNode} ↔ ${targetNode}`, { permanent: false })
+          })
         })
-          .addTo(group)
-          .bindTooltip(`WayPoint: ${selectedReroute.label}`, { permanent: false })
       }
 
-      // 6. Active Movable Vessel Marker
-      const pos = getInterpolatedVesselPosition(primary, 0.4)
-      const vesselIcon = L.divIcon({
-        className: '',
-        html: `
-          <div style="position:relative;width:40px;height:40px;display:flex;align-items:center;justify-content:center;">
-            <div style="position:absolute;width:40px;height:40px;border-radius:50%;background:rgba(217,78,40,0.25);animation:pulse 2s infinite;"></div>
-            <div style="transform:rotate(${pos.heading}deg);width:26px;height:26px;background:#D94E28;border:2px solid white;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.3);font-size:11px;">🚢</div>
-          </div>
-        `,
-        iconSize: [40, 40],
-        iconAnchor: [20, 20]
-      })
-      L.marker([pos.lat, pos.lng], { icon: vesselIcon })
-        .addTo(group)
-        .bindTooltip('FF Horizon — Live AIS Pos', { permanent: false })
+      // -----------------------------------------------------------------------
+      // LAYER 2: Weather Zones (Storms / Typhoons / Gales)
+      // -----------------------------------------------------------------------
+      if (layers.weather) {
+        WEATHER_ZONES.forEach((w) => {
+          L.circle(w.center, {
+            radius: w.radiusKm * 1000,
+            color: w.color,
+            fillColor: w.color,
+            fillOpacity: 0.18,
+            weight: 1.5,
+            dashArray: '6, 4'
+          })
+            .addTo(group)
+            .bindTooltip(
+              `<div style="font-family:monospace;font-size:11px;">
+                <strong style="color:#0284C7;">⛈️ WEATHER ALERT: ${w.name}</strong><br/>
+                <span>Severity: ${w.severity}</span><br/>
+                <span style="color:#64748B;">${w.details}</span>
+              </div>`,
+              { permanent: false }
+            )
+        })
+      }
 
-      // 7. Auto Fit Bounds to dynamically calculated bathymetric paths
+      // -----------------------------------------------------------------------
+      // LAYER 3: Geopolitical Risk Zones (Missiles / Conflicts / Jammings)
+      // -----------------------------------------------------------------------
+      if (layers.risk) {
+        RISK_ZONES.forEach((r) => {
+          L.circle(r.center, {
+            radius: r.radiusKm * 1000,
+            color: r.color,
+            fillColor: r.color,
+            fillOpacity: 0.22,
+            weight: 2.0
+          })
+            .addTo(group)
+            .bindTooltip(
+              `<div style="font-family:monospace;font-size:11px;">
+                <strong style="color:#DC2626;">🚨 THREAT ZONE: ${r.name}</strong><br/>
+                <span style="color:#B91C1C;font-weight:bold;">${r.threat}</span><br/>
+                <span>${r.details}</span>
+              </div>`,
+              { permanent: false }
+            )
+        })
+      }
+
+      // -----------------------------------------------------------------------
+      // LAYER 4: Piracy Alert Zones
+      // -----------------------------------------------------------------------
+      if (layers.piracy) {
+        PIRACY_ZONES.forEach((p) => {
+          L.circle(p.center, {
+            radius: p.radiusKm * 1000,
+            color: p.color,
+            fillColor: p.color,
+            fillOpacity: 0.2,
+            weight: 1.5,
+            dashArray: '5, 5'
+          })
+            .addTo(group)
+            .bindTooltip(
+              `<div style="font-family:monospace;font-size:11px;">
+                <strong style="color:#9333EA;">🏴‍☠️ PIRACY RISK SECTOR: ${p.name}</strong><br/>
+                <span style="color:#7E22CE;font-weight:bold;">${p.threat}</span><br/>
+                <span>${p.details}</span>
+              </div>`,
+              { permanent: false }
+            )
+        })
+      }
+
+      // -----------------------------------------------------------------------
+      // LAYER 5: Port Anchorage Congestion Zones
+      // -----------------------------------------------------------------------
+      if (layers.congestion) {
+        CONGESTION_ZONES.forEach((c) => {
+          L.circle(c.center, {
+            radius: c.radiusKm * 1000,
+            color: c.color,
+            fillColor: c.color,
+            fillOpacity: 0.25,
+            weight: 1.8
+          })
+            .addTo(group)
+            .bindTooltip(
+              `<div style="font-family:monospace;font-size:11px;">
+                <strong style="color:#D97706;">⚓ CONGESTION ANCHORAGE: ${c.name}</strong><br/>
+                <span style="color:#B45309;font-weight:bold;">${c.status}</span><br/>
+                <span>${c.details}</span>
+              </div>`,
+              { permanent: false }
+            )
+        })
+      }
+
+      // -----------------------------------------------------------------------
+      // LAYER 6: Alternative Routes (ALT-B & ALT-C)
+      // -----------------------------------------------------------------------
+      if (layers.alternatives) {
+        reroutes.forEach((r) => {
+          if (r.id === 'A') return // Handled in recommended layer
+          if (!r.waypoints || r.waypoints.length < 2) return
+          const isSelected = r.id === activeReroute
+          const routeColor = r.id === 'B' ? '#F59E0B' : '#3B82F6'
+
+          L.polyline(r.waypoints, {
+            color: routeColor,
+            weight: isSelected ? 4.5 : 2.5,
+            opacity: isSelected ? 0.95 : 0.65,
+            dashArray: '6, 6'
+          }).addTo(group)
+        })
+      }
+
+      // -----------------------------------------------------------------------
+      // LAYER 7: Recommended Route (ALT-A) & Primary Disrupted Route
+      // -----------------------------------------------------------------------
+      if (layers.recommended) {
+        // Disrupted baseline path
+        if (primary.length > 1) {
+          L.polyline(primary, {
+            color: '#D94E28',
+            weight: 2.5,
+            opacity: 0.5,
+            dashArray: '10, 6'
+          }).addTo(group)
+        }
+
+        // Recommended ALT-A path
+        const recOption = reroutes.find((r) => r.recommended) || reroutes[0]
+        if (recOption && recOption.waypoints && recOption.waypoints.length > 1) {
+          const isSelected = recOption.id === activeReroute
+          L.polyline(recOption.waypoints, {
+            color: '#10B981',
+            weight: isSelected ? 4.8 : 3.5,
+            opacity: 0.95
+          }).addTo(group)
+        }
+      }
+
+      // -----------------------------------------------------------------------
+      // LAYER 8: Global Commercial Ports Pins
+      // -----------------------------------------------------------------------
+      if (layers.ports) {
+        Object.entries(PORT_COORDS).forEach(([portName, coords]) => {
+          const isOrigin = portName === actualOriginKey
+          const isDest = portName === actualDestKey
+          const color = isOrigin ? '#1E293B' : isDest ? '#10B981' : '#64748B'
+          const radius = isOrigin || isDest ? 8 : 4.5
+
+          const marker = L.circleMarker(coords, {
+            radius: radius,
+            fillColor: color,
+            color: '#FFFFFF',
+            weight: isOrigin || isDest ? 2.5 : 1,
+            fillOpacity: isOrigin || isDest ? 1.0 : 0.75
+          }).addTo(group)
+
+          marker.bindTooltip(
+            `<div style="font-family:monospace;font-size:11px;">
+              <strong style="color:#0F172A;">${portName}</strong><br/>
+              <span style="color:#64748B;">Lat: ${coords[0].toFixed(2)}, Lng: ${coords[1].toFixed(2)}</span>
+            </div>`,
+            { permanent: false }
+          )
+        })
+      }
+
+      // -----------------------------------------------------------------------
+      // LAYER 9: Ship Position (Live AIS Marker & Heading)
+      // -----------------------------------------------------------------------
+      if (layers.ship && primary.length > 1) {
+        const pos = getInterpolatedVesselPosition(primary, 0.4)
+        const vesselIcon = L.divIcon({
+          className: '',
+          html: `
+            <div style="position:relative;width:44px;height:44px;display:flex;align-items:center;justify-content:center;">
+              <div style="position:absolute;width:44px;height:44px;border-radius:50%;background:rgba(217,78,40,0.3);animation:ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+              <div style="transform:rotate(${pos.heading}deg);width:28px;height:28px;background:#D94E28;border:2px solid white;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,0.35);font-size:12px;">🚢</div>
+            </div>
+          `,
+          iconSize: [44, 44],
+          iconAnchor: [22, 22]
+        })
+
+        L.marker([pos.lat, pos.lng], { icon: vesselIcon })
+          .addTo(group)
+          .bindTooltip(
+            `<div style="font-family:monospace;font-size:11px;">
+              <strong style="color:#D94E28;">🚢 FF HORIZON (IMO 984210)</strong><br/>
+              <span>Speed: 18.4 kn · Heading: ${pos.heading}°</span><br/>
+              <span style="color:#047857;">Live Telemetry: AIS Stream Active</span>
+            </div>`,
+            { permanent: false }
+          )
+      }
+
+      // Auto Fit Bounds
       if (primary.length > 1) {
         const bounds = L.latLngBounds(primary)
-        reroutes.forEach((r) => r.waypoints.forEach((pt) => bounds.extend(pt)))
+        reroutes.forEach((r) => r.waypoints?.forEach((pt) => bounds.extend(pt)))
         map.fitBounds(bounds, { padding: [50, 50], maxZoom: 7 })
       }
     })
@@ -210,11 +526,89 @@ export default function GlobalMap({
     return () => {
       mounted = false
     }
-  }, [activeReroute, actualOriginKey, actualDestKey, primaryWaypoints, reroutes, selectedReroute])
+  }, [activeReroute, actualOriginKey, actualDestKey, primaryWaypoints, reroutes, selectedReroute, layers])
+
+  const activeCount = Object.values(layers).filter(Boolean).length
 
   return (
     <div className="relative w-full h-[520px] bg-[#F6F6F3] rounded-2xl overflow-hidden shadow-xs border border-stone-300 font-sans">
       <div ref={mapContainerRef} className="w-full h-full" />
+
+      {/* Floating Layer Control Panel (Top-Right Widget) */}
+      <div className="absolute top-3 right-3 z-[1000] font-mono text-xs">
+        <button
+          onClick={() => setPanelOpen(!panelOpen)}
+          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/95 backdrop-blur-md border border-stone-300 shadow-md font-black text-stone-800 hover:bg-stone-50 transition-all"
+        >
+          <span>🗺️ MAP LAYERS</span>
+          <span className="bg-[#D94E28] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+            {activeCount}/9 ACTIVE
+          </span>
+          <span className="text-stone-400 text-[10px]">{panelOpen ? '▲' : '▼'}</span>
+        </button>
+
+        {panelOpen && (
+          <div className="mt-2 w-64 rounded-xl bg-white/95 backdrop-blur-md border border-stone-300 p-3 shadow-xl space-y-2 text-[11px] font-bold text-stone-800 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-stone-200 pb-2">
+              <span className="font-black text-[#D94E28] uppercase text-[10px]">Select Map Layers</span>
+              <div className="flex gap-2 text-[9px]">
+                <button
+                  onClick={() => setAllLayers(true)}
+                  className="text-emerald-700 font-bold hover:underline"
+                >
+                  ALL ON
+                </button>
+                <span className="text-stone-300">|</span>
+                <button
+                  onClick={() => setAllLayers(false)}
+                  className="text-stone-500 font-bold hover:underline"
+                >
+                  CLEAR
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-1.5 max-h-72 overflow-y-auto pr-1">
+              {[
+                { id: 'ship', label: 'Ship Position', icon: '🚢', tag: 'Live AIS' },
+                { id: 'recommended', label: 'Recommended Route', icon: '🟢', tag: 'ALT-A' },
+                { id: 'alternatives', label: 'Alternative Routes', icon: '🟡', tag: 'ALT-B / C' },
+                { id: 'seaLanes', label: 'Sea Lanes', icon: '🌐', tag: 'NavMesh' },
+                { id: 'ports', label: 'Ports', icon: '⚓', tag: '60+ Global' },
+                { id: 'weather', label: 'Weather Zones', icon: '⛈️', tag: 'Storms' },
+                { id: 'risk', label: 'Risk Zones', icon: '🚨', tag: 'Geopolitical' },
+                { id: 'piracy', label: 'Pirate Zones', icon: '🏴‍☠️', tag: 'IMB Alerts' },
+                { id: 'congestion', label: 'Congestion Zones', icon: '🛑', tag: 'Anchorage' }
+              ].map((item) => {
+                const key = item.id as keyof typeof layers
+                const isChecked = layers[key]
+                return (
+                  <label
+                    key={item.id}
+                    className={`flex items-center justify-between p-1.5 rounded cursor-pointer transition-colors ${
+                      isChecked ? 'bg-stone-100/80 text-stone-900' : 'text-stone-400 hover:bg-stone-50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => toggleLayer(key)}
+                        className="rounded border-stone-300 text-[#D94E28] focus:ring-[#D94E28] size-3.5 cursor-pointer"
+                      />
+                      <span>{item.icon}</span>
+                      <span>{item.label}</span>
+                    </div>
+                    <span className="text-[9px] font-mono text-stone-400 bg-stone-200/60 px-1.5 py-0.5 rounded">
+                      {item.tag}
+                    </span>
+                  </label>
+                )
+              })}
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Interactive Bottom Reroute Control Strip */}
       <div className="absolute bottom-0 left-0 right-0 z-[1000] bg-white/95 backdrop-blur-md border-t border-stone-300 px-4 py-3 flex flex-wrap items-center gap-3">

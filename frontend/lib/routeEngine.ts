@@ -200,7 +200,7 @@ export const SEA_NODES: Record<string, [number, number]> = {
 // ---------------------------------------------------------------------------
 // 4. Graph Connections — Strictly Water Edges (Zero Overland Edges)
 // ---------------------------------------------------------------------------
-const SEA_GRAPH: Record<string, string[]> = {
+export const SEA_GRAPH: Record<string, string[]> = {
   'N_JAPAN_SOUTH':         ['N_JAPAN_EAST', 'N_KOREA_STRAIT', 'N_PHILIPPINE_SEA_N', 'N_TAIWAN_STRAIT_N', 'N_PACIFIC_OUTER_E'],
   'N_JAPAN_EAST':          ['N_JAPAN_SOUTH', 'N_PHILIPPINE_SEA_N', 'N_PACIFIC_OUTER_E'],
   'N_KOREA_STRAIT':        ['N_JAPAN_SOUTH', 'N_TAIWAN_STRAIT_N', 'N_SCS_NORTH'],
