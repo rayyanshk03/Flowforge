@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { ArrowRight, CheckCircle2, Globe2 } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import Navbar from '@/components/Navbar'
+import { computeDynamicReroutes } from '@/lib/routeEngine'
 
 const GlobalMap = dynamic(() => import('@/components/GlobalMap'), {
   ssr: false,
