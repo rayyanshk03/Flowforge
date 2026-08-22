@@ -56,6 +56,8 @@ interface GlobalMapProps {
   corridor?: RouteDetail
   originPort?: string
   destinationPort?: string
+  activeReroute?: string
+  onRerouteChange?: (id: string) => void
 }
 
 // ── Reroute option definitions (shown in side panel) ──────────────────────────
@@ -95,12 +97,12 @@ const REROUTE_OPTIONS = [
   },
 ]
 
-export default function GlobalMap({ corridor: customCorridor, originPort, destinationPort }: GlobalMapProps) {
+export default function GlobalMap({ corridor: customCorridor, originPort, destinationPort, activeReroute = 'A', onRerouteChange }: GlobalMapProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef  = useRef<any>(null)
   const layerGroupRef   = useRef<any>(null)
 
-  const [activeReroute, setActiveReroute] = useState<string>('A')  // default best route shown
+  // No internal state — controlled by parent
 
   const origin = originPort || ORIGIN_KEY
   const dest   = destinationPort || DEST_KEY
@@ -139,36 +141,25 @@ export default function GlobalMap({ corridor: customCorridor, originPort, destin
 
       const primary = PRIMARY_WAYPOINTS
 
-      // 1. Primary disrupted route (solid red-orange, thinner with dashes to indicate disruption)
+      // 1. Primary disrupted route — always shown as red-orange dashed
       if (primary.length > 1) {
         L.polyline(primary, {
-          color: '#D94E28',
-          weight: 3,
-          opacity: 0.55,
-          dashArray: '10, 6',
+          color: '#D94E28', weight: 2.5, opacity: 0.5, dashArray: '10, 6',
         }).addTo(group)
       }
 
-      // 2. All reroute alternatives (thin grey lines)
-      REROUTE_OPTIONS.filter(r => r.id !== activeReroute).forEach(r => {
-        if (r.waypoints.length > 1) {
-          L.polyline(r.waypoints, {
-            color: '#94A3B8',
-            weight: 1.5,
-            opacity: 0.4,
-            dashArray: '4, 6',
-          }).addTo(group)
-        }
+      // 2. All 3 alternatives — dotted thin for non-selected, thick solid for selected
+      REROUTE_OPTIONS.forEach(r => {
+        if (!r.waypoints || r.waypoints.length < 2) return
+        const isSelected = r.id === activeReroute
+        const color = r.recommended ? '#10B981' : r.id === 'B' ? '#F59E0B' : '#6B7280'
+        L.polyline(r.waypoints, {
+          color: isSelected ? color : '#94A3B8',
+          weight: isSelected ? 4 : 1.5,
+          opacity: isSelected ? 0.95 : 0.35,
+          dashArray: isSelected ? undefined : '5, 7',
+        }).addTo(group)
       })
-
-      // 3. Selected (recommended) reroute — bold solid green
-      if (selectedReroute.waypoints.length > 1) {
-        L.polyline(selectedReroute.waypoints, {
-          color: selectedReroute.recommended ? '#10B981' : '#F59E0B',
-          weight: 4,
-          opacity: 0.95,
-        }).addTo(group)
-      }
 
       // 4. Origin port marker — Singapore
       const originCoords = primary[0] || ORIGIN_COORDS
@@ -179,19 +170,17 @@ export default function GlobalMap({ corridor: customCorridor, originPort, destin
 
       // 5. Destination port marker — Yokohama
       const destCoords = primary[primary.length - 1] || DEST_COORDS
-      const destMarker = L.circleMarker(destCoords, {
+      L.circleMarker(destCoords, {
         radius: 8, fillColor: '#10B981', color: '#fff', weight: 2, fillOpacity: 1
-      }).addTo(group)
-      destMarker.bindTooltip('Destination: Port of Yokohama (JP)', { permanent: false })
+      }).addTo(group).bindTooltip('Destination: Port of Yokohama (JP)', { permanent: false })
 
-      // 6. Intermediate port on selected reroute (midpoint marker)
+      // 6. Intermediate waypoint label on selected reroute
       if (selectedReroute.waypoints.length > 4) {
         const mid = selectedReroute.waypoints[Math.floor(selectedReroute.waypoints.length / 2)]
-        const midMarker = L.circleMarker(mid, {
-          radius: 5, fillColor: selectedReroute.recommended ? '#10B981' : '#F59E0B',
-          color: '#fff', weight: 1.5, fillOpacity: 0.9
-        }).addTo(group)
-        midMarker.bindTooltip(selectedReroute.label, { permanent: false })
+        const color = selectedReroute.recommended ? '#10B981' : '#F59E0B'
+        L.circleMarker(mid, {
+          radius: 5, fillColor: color, color: '#fff', weight: 1.5, fillOpacity: 0.9
+        }).addTo(group).bindTooltip(selectedReroute.label, { permanent: false })
       }
 
       // 7. Vessel position on primary route
@@ -211,10 +200,10 @@ export default function GlobalMap({ corridor: customCorridor, originPort, destin
         .addTo(group)
         .bindTooltip('FF Horizon — 38% complete', { permanent: false })
 
-      // 8. Fit bounds to full corridor + selected reroute
+      // 8. Fit bounds: primary + all 3 alternatives
       if (primary.length > 1) {
         const bounds = L.latLngBounds(primary)
-        selectedReroute.waypoints.forEach(pt => bounds.extend(pt))
+        REROUTE_OPTIONS.forEach(r => r.waypoints.forEach(pt => bounds.extend(pt)))
         map.fitBounds(bounds, { padding: [50, 50], maxZoom: 6 })
       }
     })
@@ -226,37 +215,34 @@ export default function GlobalMap({ corridor: customCorridor, originPort, destin
     <div className="relative w-full h-[520px] bg-stone-100 rounded-2xl overflow-hidden shadow-sm border border-stone-200 font-sans">
       <div ref={mapContainerRef} className="w-full h-full" />
 
-      {/* Reroute selector overlay — bottom */}
+      {/* Reroute bottom bar — shows which is active */}
       <div className="absolute bottom-0 left-0 right-0 z-[1000] bg-white/95 backdrop-blur border-t border-stone-200 px-4 py-3 flex flex-wrap items-center gap-3">
-        <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest shrink-0">Reroute Options</span>
+        <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest shrink-0">Click card to highlight route</span>
         {REROUTE_OPTIONS.map(r => (
           <button
             key={r.id}
-            onClick={() => setActiveReroute(r.id)}
+            onClick={() => onRerouteChange?.(r.id)}
             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[11px] font-semibold transition-all ${
               activeReroute === r.id
                 ? r.recommended
                   ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
-                  : 'bg-amber-50 border-amber-300 text-amber-900'
-                : 'bg-white border-stone-200 text-stone-600 hover:border-stone-300'
+                  : r.id === 'B' ? 'bg-amber-50 border-amber-300 text-amber-900'
+                  : 'bg-stone-100 border-stone-400 text-stone-900'
+                : 'bg-white border-stone-200 text-stone-500 hover:border-stone-300'
             }`}
           >
-            <span className="size-2 rounded-full shrink-0" style={{ background: r.color }} />
+            <span
+              className="size-2 rounded-full shrink-0"
+              style={{ background: activeReroute === r.id ? (r.recommended ? '#10B981' : r.id === 'B' ? '#F59E0B' : '#6B7280') : '#94A3B8' }}
+            />
             {r.label}
-            {r.recommended && activeReroute === r.id && (
-              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">BEST</span>
-            )}
+            {r.recommended && <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">BEST</span>}
           </button>
         ))}
-
-        {/* Legend */}
-        <div className="ml-auto flex items-center gap-4 text-[11px] font-medium text-stone-600">
-          <span className="flex items-center gap-1.5">
-            <span className="size-3 rounded-full bg-[#D94E28] opacity-60" /> Disrupted Route
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="size-3 rounded-full bg-emerald-500" /> Best Reroute
-          </span>
+        <div className="ml-auto flex items-center gap-4 text-[11px] font-medium text-stone-500">
+          <span className="flex items-center gap-1.5"><span className="size-3 rounded-full bg-[#D94E28] opacity-60" /> Disrupted</span>
+          <span className="flex items-center gap-1.5"><span className="size-3 rounded-full bg-emerald-500" /> Best</span>
+          <span className="flex items-center gap-1.5"><span className="inline-block w-4 h-0.5 border-t-2 border-dashed border-stone-400" /> Alternatives</span>
         </div>
       </div>
     </div>

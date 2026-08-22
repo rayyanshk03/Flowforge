@@ -54,6 +54,7 @@ const REROUTE_OPTIONS = [
 export default function NetworkPage() {
   const [lastUpdated, setLastUpdated] = useState<string>('')
   const [backendStatus, setBackendStatus] = useState<'CONNECTED' | 'DISCONNECTED'>('DISCONNECTED')
+  const [activeReroute, setActiveReroute] = useState('A')  // shared by map + cards
 
   useEffect(() => {
     setLastUpdated(new Date().toLocaleTimeString())
@@ -121,6 +122,8 @@ export default function NetworkPage() {
             <GlobalMap
               originPort="Singapore Tuas Hub (SG)"
               destinationPort="Port of Yokohama (JP)"
+              activeReroute={activeReroute}
+              onRerouteChange={setActiveReroute}
             />
           </div>
 
@@ -134,10 +137,15 @@ export default function NetworkPage() {
             {REROUTE_OPTIONS.map(r => (
               <div
                 key={r.id}
-                className={`rounded-xl border p-4 space-y-3 ${
-                  r.recommended
-                    ? 'border-emerald-300 bg-emerald-50'
-                    : 'border-stone-200 bg-white'
+                onClick={() => setActiveReroute(r.id)}
+                className={`rounded-xl border p-4 space-y-3 cursor-pointer transition-all ${
+                  activeReroute === r.id
+                    ? r.recommended
+                      ? 'border-emerald-300 bg-emerald-50 shadow-sm'
+                      : r.id === 'B'
+                        ? 'border-amber-300 bg-amber-50 shadow-sm'
+                        : 'border-stone-400 bg-stone-50 shadow-sm'
+                    : 'border-stone-200 bg-white hover:border-stone-300'
                 }`}
               >
                 {/* Header */}
