@@ -193,12 +193,13 @@ export default function GlobalMap({
       rerouteOptions.forEach((r) => {
         if (!r.waypoints || r.waypoints.length < 2) return
         const isSelected = r.id === activeReroute
-        const color = r.recommended ? '#10B981' : r.id === 'B' ? '#F59E0B' : '#6B7280'
+        const routeColor = r.id === 'A' ? '#10B981' : r.id === 'B' ? '#F59E0B' : '#3B82F6'
+
         L.polyline(r.waypoints, {
-          color: isSelected ? color : '#94A3B8',
-          weight: isSelected ? 4 : 1.5,
-          opacity: isSelected ? 0.95 : 0.35,
-          dashArray: isSelected ? undefined : '5, 7'
+          color: routeColor,
+          weight: isSelected ? 4.5 : 2.5,
+          opacity: isSelected ? 0.95 : 0.6,
+          dashArray: isSelected ? undefined : '6, 6'
         }).addTo(group)
       })
 
