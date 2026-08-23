@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import {
   ArrowRight,
@@ -124,53 +124,118 @@ export default function DecisionsPage() {
     })
   }
 
-  // Decision drivers
-  const decisionDrivers = [
-    { name: 'PORT CONGESTION (NLRTM)', impact: '+32% risk contribution' },
-    { name: 'VESSEL BACKLOG QUEUE', impact: '+21% risk contribution' },
-    { name: 'NORTH SEA WEATHER ANOMALY', impact: '+18% risk contribution' },
-    { name: 'ANTWERP ALTERNATIVE CAPACITY', impact: '-14% risk contribution' },
-    { name: 'DIVERSION ROUTE TRANSPORT COST', impact: '-7% risk contribution' }
-  ]
+  // ── DERIVED DECISION METRICS (reactive to analysisData + scenarioInput) ─────
+  const decision = useMemo(() => {
+    const mc         = analysisData?.monte_carlo || analysisData?.predictions?.monte_carlo
+    const cost       = analysisData?.cost        || analysisData?.predictions?.cost
+    const eta        = analysisData?.eta         || analysisData?.predictions?.eta
+    const disruption = analysisData?.disruption  || analysisData?.predictions?.disruption
+    const dec        = analysisData?.decision    || analysisData?.predictions?.decision
+    const route      = analysisData?.route       || analysisData?.predictions?.route
+    const shipment   = analysisData?.shipment    || analysisData?.predictions?.shipment
 
-  // Execution steps
-  const executionSteps = [
-    { step: '01', action: 'REROUTE', detail: '142 shipments via Antwerp (BEANR) cross-dock hub.' },
-    { step: '02', action: 'UPDATE', detail: '18 ocean vessel feeder schedules & arrival windows.' },
-    { step: '03', action: 'REALLOCATE', detail: '6 regional warehouse cross-dock buffer slots.' },
-    { step: '04', action: 'NOTIFY', detail: '23 downstream tier 1 enterprise distribution points.' },
-    { step: '05', action: 'MONITOR', detail: 'Updated Antwerp corridor telemetry continuously.' }
-  ]
+    const originPort = shipment?.origin_port  || scenarioInput?.origin_unlocode  || 'NLRTM'
+    const destPort   = shipment?.destination_port || scenarioInput?.destination_unlocode || 'SGSIN'
+    const carrier    = shipment?.carrier || scenarioInput?.carrier_code || 'MAERSK'
+    const cargoVal   = shipment?.cargo_value_usd || scenarioInput?.cargo_value_usd || 120000
+    const cargoWt    = shipment?.cargo_weight_mt || scenarioInput?.cargo_weight_mt || 15
 
-  // Decision Audit Timeline
-  const decisionTimeline = [
-    { time: '14:02:11', event: 'Rotterdam Port congestion disruption detected (87%).', status: 'CRITICAL' },
-    { time: '14:04:40', event: 'Impact assessment completed (142 shipments exposed).', status: 'COMPLETED' },
-    { time: '14:05:12', event: 'Baseline corridor risk updated to 73%.', status: 'COMPLETED' },
+    const savedLossVal   = Math.round(cost?.net_financial_savings_usd?.value || dec?.net_savings || cargoVal * 0.12)
+    const expectedLossVal= Math.round(dec?.expected_loss || cargoVal * 0.04)
+    const baselineLossVal= savedLossVal + expectedLossVal
+    const rerouteCostVal = Math.round(cost?.cost_breakdown?.total_reroute_cost_usd || cargoVal * 0.04)
+    const netBenefitVal  = Math.max(0, savedLossVal - rerouteCostVal)
+
+    const baselineDelayVal  = parseFloat((eta?.estimated_delay_hours || 18.4).toFixed(1))
+    const optimizedDelayVal = parseFloat(Math.max(0.5, eta?.predicted_total_hours ? eta.predicted_total_hours * 0.05 : 5.2).toFixed(1))
+    const delaySavedVal     = parseFloat((baselineDelayVal - optimizedDelayVal).toFixed(1))
+
+    const disruptionProb  = Math.round((disruption?.disruption_probability || mc?.disruption_probability || 0.28) * 100)
+    const baselineRiskPct = Math.min(98, Math.max(45, disruptionProb + 35))
+    const optimizedRiskPct= Math.max(8,  Math.round(disruptionProb * 0.75))
+    const riskDelta       = baselineRiskPct - optimizedRiskPct
+
+    const p50Cost      = Math.round(mc?.cost?.p50 || mc?.cost_percentiles?.P50 * 24 || cost?.ml_predicted_shipment_cost?.value || cargoVal * 0.08)
+    const baselineCost = Math.round(p50Cost * 1.1)
+    const optimizedCost= p50Cost + rerouteCostVal
+
+    const shipmentCount = Math.max(1, Math.round(cargoWt * 9.4))
+    const safeCount     = Math.round(shipmentCount * 0.78)
+
+    const altMidRisk     = Math.round(baselineRiskPct * 0.58)
+    const altMidDelay    = parseFloat((optimizedDelayVal * 1.75).toFixed(1))
+    const altMidLoss     = Math.round(baselineLossVal * 0.50)
+
+    const selectedRouteName = route?.selected_route?.description || dec?.recommended_action || `${destPort} Diversion`
+    const confidence        = Math.round((disruption?.confidence || 0.91) * 100)
+
+    // Dynamic decision drivers based on analysis telemetry
+    const congestionImpact = disruption?.feature_importances?.Port_Congestion_Score
+      ? `+${Math.round(disruption.feature_importances.Port_Congestion_Score * 100)}% risk contribution`
+      : `+${Math.min(45, Math.round(disruptionProb * 0.46))}% risk contribution`
+    const geoRiskImpact = disruption?.feature_importances?.Geo_Port_Risk
+      ? `+${Math.round(disruption.feature_importances.Geo_Port_Risk * 100)}% risk contribution`
+      : `+${Math.min(30, Math.round(disruptionProb * 0.23))}% risk contribution`
+
+    const drivers = [
+      { name: `PORT CONGESTION (${originPort})`,          impact: congestionImpact },
+      { name: 'VESSEL BACKLOG QUEUE',                      impact: `+${Math.min(25, Math.round(disruptionProb * 0.21))}% risk contribution` },
+      { name: 'WEATHER ANOMALY DETECTED',                  impact: `+${Math.min(22, Math.round(disruptionProb * 0.18))}% risk contribution` },
+      { name: `${destPort} ALTERNATIVE CAPACITY`,          impact: `-${Math.round(riskDelta * 0.55)}% risk contribution` },
+      { name: 'DIVERSION ROUTE TRANSPORT COST',            impact: `-${Math.round(riskDelta * 0.28)}% risk contribution` }
+    ]
+
+    // Dynamic execution steps
+    const steps = [
+      { step: '01', action: 'REROUTE',    detail: `${shipmentCount} shipments via ${destPort} cross-dock hub.` },
+      { step: '02', action: 'UPDATE',     detail: `${Math.max(4, Math.round(shipmentCount * 0.12))} ocean vessel feeder schedules & arrival windows.` },
+      { step: '03', action: 'REALLOCATE', detail: `${Math.max(2, Math.round(shipmentCount * 0.04))} regional warehouse cross-dock buffer slots.` },
+      { step: '04', action: 'NOTIFY',     detail: `${Math.max(5, Math.round(shipmentCount * 0.16))} downstream tier 1 enterprise distribution points.` },
+      { step: '05', action: 'MONITOR',    detail: `Updated ${destPort} corridor telemetry continuously.` }
+    ]
+
+    return {
+      originPort, destPort, carrier, cargoVal, cargoWt,
+      savedLossVal, expectedLossVal, baselineLossVal, rerouteCostVal, netBenefitVal,
+      baselineDelayVal, optimizedDelayVal, delaySavedVal,
+      disruptionProb, baselineRiskPct, optimizedRiskPct, riskDelta,
+      p50Cost, baselineCost, optimizedCost,
+      shipmentCount, safeCount,
+      altMidRisk, altMidDelay, altMidLoss,
+      selectedRouteName, confidence,
+      drivers, steps
+    }
+  }, [analysisData, scenarioInput])
+
+  // Decision Audit Timeline — always reflects latest analysis + any submitted outcome
+  const decisionTimeline = useMemo(() => [
+    { time: '14:02:11', event: `${decision.originPort} disruption detected (${decision.baselineRiskPct}% risk).`, status: 'CRITICAL' },
+    { time: '14:04:40', event: `Impact assessment completed (${decision.shipmentCount} shipments exposed).`, status: 'COMPLETED' },
+    { time: '14:05:12', event: `Baseline corridor risk updated to ${decision.baselineRiskPct}%.`, status: 'COMPLETED' },
     { time: '14:06:30', event: '10,000 Monte Carlo stochastic scenarios initiated.', status: 'COMPLETED' },
     { time: '14:07:45', event: '3 alternative routing candidates evaluated.', status: 'COMPLETED' },
     { time: '14:08:10', event: 'XGBoost cost & delay objective function optimized.', status: 'COMPLETED' },
-    { time: '14:08:32', event: 'Route B via Antwerp selected as most robust strategy.', status: 'SELECTED' },
+    { time: lastAnalysisTime, event: `${decision.selectedRouteName} selected as most robust strategy.`, status: 'SELECTED' },
     ...(submittedOutcome ? [{
       time: new Date().toTimeString().slice(0, 8),
       event: `Human ${submittedOutcome.action} recorded — Reason: ${submittedOutcome.reason_category || 'OPERATIONAL'} (${submittedOutcome.reason_text || 'Completed by operator'}).`,
       status: submittedOutcome.status
     }] : [])
-  ]
+  ], [decision, lastAnalysisTime, submittedOutcome])
 
   // Historical Decisions Log
   const decisionHistory = [
     ...(submittedOutcome ? [{
       id: 0,
       time: new Date().toTimeString().slice(0, 5),
-      title: 'Rotterdam Congestion',
-      action: `${submittedOutcome.action} (${submittedOutcome.selected_strategy_id || 'Antwerp'})`,
-      saved: submittedOutcome.action === 'OVERRIDE' ? '$41,000 USD' : '$63,000 USD',
+      title: `${decision.originPort} Disruption`,
+      action: `${submittedOutcome.action} (${submittedOutcome.selected_strategy_id || decision.destPort})`,
+      saved: submittedOutcome.action === 'OVERRIDE' ? `$${Math.round(decision.savedLossVal * 0.65).toLocaleString()} USD` : `$${decision.savedLossVal.toLocaleString()} USD`,
       status: submittedOutcome.status
     }] : []),
-    { id: 1, time: '14:08:32', title: 'Rotterdam Congestion', action: 'Reroute via Antwerp', saved: '$63,000 USD', status: 'APPROVED' },
-    { id: 2, time: '13:42:15', title: 'Singapore Feeder Gap', action: 'Reroute via Colombo', saved: '$27,000 USD', status: 'EXECUTED' },
-    { id: 3, time: '12:18:04', title: 'Arabian Sea Weather', action: 'Delay Shipment Release +4H', saved: '$11,400 USD', status: 'EXECUTED' }
+    { id: 1, time: lastAnalysisTime, title: `${decision.originPort} Disruption`, action: `Reroute via ${decision.destPort}`, saved: `$${decision.savedLossVal.toLocaleString()} USD`, status: 'APPROVED' },
+    { id: 2, time: '13:42:15', title: 'Singapore Feeder Gap',  action: 'Reroute via Colombo', saved: '$27,000 USD', status: 'EXECUTED' },
+    { id: 3, time: '12:18:04', title: 'Arabian Sea Weather',   action: 'Delay Shipment Release +4H', saved: '$11,400 USD', status: 'EXECUTED' }
   ]
 
   return (
@@ -308,20 +373,18 @@ export default function DecisionsPage() {
                 SECTION 1 · RECOMMENDED OPERATIONAL ACTION
               </span>
               <h2 className="text-3xl font-black tracking-tight text-[#151719] md:text-4xl font-sans">
-                {scenarioInput
-                  ? `REROUTE SHIPMENT (${scenarioInput.origin_unlocode} → ${scenarioInput.destination_unlocode}) VIA DIVERSION HUB`
-                  : 'REROUTE 142 SHIPMENTS VIA ANTWERP'}
+                {`REROUTE SHIPMENT (${decision.originPort} → ${decision.destPort}) VIA DIVERSION HUB`}
               </h2>
               <p className="text-xs text-stone-600 font-semibold font-sans">
                 {scenarioInput
-                  ? `Custom Scenario: ${scenarioInput.origin_unlocode} → ${scenarioInput.destination_unlocode} · Carrier: ${scenarioInput.carrier_code} · Cargo Weight: ${scenarioInput.cargo_weight_mt} MT · Declared Value: $${scenarioInput.cargo_value_usd?.toLocaleString()} USD`
-                  : 'Corridor: Mumbai (INNSA) → Colombo (LKCMB) → Antwerp (BEANR) → Rotterdam (NLRTM)'}
+                  ? `Custom Scenario: ${decision.originPort} → ${decision.destPort} · Carrier: ${decision.carrier} · Cargo Weight: ${decision.cargoWt} MT · Declared Value: $${decision.cargoVal?.toLocaleString()} USD`
+                  : `Corridor: ${decision.originPort} → ${decision.destPort} via ${decision.selectedRouteName}`}
               </p>
             </div>
 
             <div className="flex items-center gap-3 font-mono">
               <span className="rounded bg-[#ECFDF5] border border-[#A7F3D0] px-4 py-2 text-xs font-black text-[#047857]">
-                Recommendation Confidence: 91%
+                Recommendation Confidence: {decision.confidence}%
               </span>
               <span className={`rounded px-4 py-2 text-xs font-black ${
                 decisionState === 'APPROVED' ? 'bg-emerald-100 text-[#047857]' :
@@ -406,138 +469,98 @@ export default function DecisionsPage() {
           )}
 
           {/* 4 Outcomes Grid & Business Result */}
-          {(() => {
-            const mc = analysisData?.monte_carlo || analysisData?.predictions?.monte_carlo
-            const cost = analysisData?.cost || analysisData?.predictions?.cost
-            const eta = analysisData?.eta || analysisData?.predictions?.eta
-            const disruption = analysisData?.disruption || analysisData?.predictions?.disruption
-            const decision = analysisData?.decision || analysisData?.predictions?.decision
-            const route = analysisData?.route || analysisData?.predictions?.route
-            const shipment = analysisData?.shipment || analysisData?.predictions?.shipment
-
-            const originPort = shipment?.origin_port || scenarioInput?.origin_unlocode || 'Shanghai'
-            const destPort = shipment?.destination_port || scenarioInput?.destination_unlocode || 'Yokohama'
-            const cargoVal = shipment?.cargo_value_usd || scenarioInput?.cargo_value_usd || 120000
-
-            const savedLossVal = Math.round(cost?.net_financial_savings_usd?.value || decision?.net_savings || (cargoVal * 0.12))
-            const expectedLossVal = Math.round(decision?.expected_loss || (cargoVal * 0.04))
-            const baselineLossVal = savedLossVal + expectedLossVal
-            const rerouteCostVal = Math.round(cost?.cost_breakdown?.total_reroute_cost_usd || 4700)
-            const netBenefitVal = Math.max(0, savedLossVal - rerouteCostVal)
-
-            const baselineDelayVal = (eta?.estimated_delay_hours || 18.4).toFixed(1)
-            const optimizedDelayVal = Math.max(0.5, (eta?.predicted_total_hours ? eta.predicted_total_hours * 0.05 : 5.2)).toFixed(1)
-            const delaySavedVal = (parseFloat(baselineDelayVal) - parseFloat(optimizedDelayVal)).toFixed(1)
-
-            const disruptionProb = Math.round((disruption?.disruption_probability || mc?.risk?.disruption_probability || 0.28) * 100)
-            const baselineRiskPct = Math.min(98, Math.max(45, disruptionProb + 35))
-            const optimizedRiskPct = Math.max(8, Math.round(disruptionProb * 0.75))
-            const riskDelta = baselineRiskPct - optimizedRiskPct
-
-            const p50Cost = Math.round(mc?.cost?.p50 || cost?.ml_predicted_shipment_cost?.value || (cargoVal * 0.08))
-            const baselineCost = Math.round(p50Cost * 1.1)
-            const optimizedCost = p50Cost + rerouteCostVal
-
-            const selectedRouteName = route?.selected_route?.description || decision?.recommended_action || `${destPort} Reroute`
-
-            return (
-              <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-4 md:grid-cols-4 font-mono text-center">
-                  <div className="rounded bg-stone-50 p-4 border border-stone-200 space-y-1">
-                    <span className="text-[10px] text-stone-500 font-extrabold block">RISK REDUCTION</span>
-                    <span className="text-xl font-black text-[#047857] block">{baselineRiskPct}% → {optimizedRiskPct}%</span>
-                    <span className="text-[9px] text-[#047857] font-bold block">-{riskDelta} percentage points</span>
-                  </div>
-
-                  <div className="rounded bg-stone-50 p-4 border border-stone-200 space-y-1">
-                    <span className="text-[10px] text-stone-500 font-extrabold block">DELAY REDUCTION</span>
-                    <span className="text-xl font-black text-[#047857] block">+{baselineDelayVal}H → +{optimizedDelayVal}H</span>
-                    <span className="text-[9px] text-[#047857] font-bold block">{delaySavedVal} Hours Saved</span>
-                  </div>
-
-                  <div className="rounded bg-stone-50 p-4 border border-stone-200 space-y-1">
-                    <span className="text-[10px] text-stone-500 font-extrabold block">EXPECTED LOSS</span>
-                    <span className="text-xl font-black text-[#047857] block">${Math.round(baselineLossVal/1000)}K → ${Math.round(expectedLossVal/1000)}K</span>
-                    <span className="text-[9px] text-[#047857] font-bold block">-${savedLossVal.toLocaleString()} USD Loss</span>
-                  </div>
-
-                  <div className="rounded bg-stone-50 p-4 border border-stone-200 space-y-1">
-                    <span className="text-[10px] text-stone-500 font-extrabold block">TRANSPORT COST</span>
-                    <span className="text-xl font-black text-stone-900 block">${Math.round(baselineCost/1000)}K → ${Math.round(optimizedCost/1000)}K</span>
-                    <span className="text-[9px] text-stone-600 font-bold block">+${(rerouteCostVal/1000).toFixed(1)}K Extra Transport</span>
-                  </div>
-                </div>
-
-                {/* SECTION 2: Key Business Highlight Card */}
-                <div className="rounded-lg bg-[#047857] text-white p-6 font-mono flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
-                  <div>
-                    <span className="text-xs font-black tracking-widest text-emerald-100 block">KEY BUSINESS RESULT ({originPort.toUpperCase()} → {destPort.toUpperCase()})</span>
-                    <span className="text-3xl md:text-5xl font-black block mt-1">${savedLossVal.toLocaleString()} USD</span>
-                    <span className="text-xs text-emerald-100 font-bold block mt-1">EXPECTED FINANCIAL LOSS AVOIDED</span>
-                  </div>
-                  <div className="text-right text-xs text-emerald-100 font-bold space-y-1">
-                    <div>Additional Transport Cost: <span className="font-black text-white">${rerouteCostVal.toLocaleString()} USD</span></div>
-                    <div>Net Financial Benefit: <span className="font-black text-white">+${netBenefitVal.toLocaleString()} USD</span></div>
-                  </div>
-                </div>
-
-                {/* ── SECTION 3: BEFORE VS FLOWFORGE TABLE ───────────────────────────── */}
-                <div className="rounded-lg border border-stone-300 bg-white p-6 shadow-2xs space-y-4 font-mono text-xs">
-                  <span className="text-xs font-black text-stone-900 block">SECTION 3 · WHAT CHANGES? (CURRENT PLAN VS FLOWFORGE PLAN)</span>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                      <thead>
-                        <tr className="border-b-2 border-stone-300 text-[10px] text-stone-500 font-black">
-                          <th className="py-2">OPERATIONAL METRIC</th>
-                          <th className="py-2">CURRENT PLAN ({destPort.toUpperCase()})</th>
-                          <th className="py-2 text-[#047857]">FLOWFORGE PLAN ({selectedRouteName.toUpperCase()}) ★</th>
-                          <th className="py-2 text-stone-600">DELTA / IMPROVEMENT</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-stone-200 font-bold text-stone-800">
-                        <tr>
-                          <td className="py-2.5">Disruption Risk</td>
-                          <td className="py-2.5 text-[#991B1B]">{baselineRiskPct}%</td>
-                          <td className="py-2.5 text-[#047857] font-black">{optimizedRiskPct}%</td>
-                          <td className="py-2.5 text-[#047857] font-black">-{riskDelta} pts</td>
-                        </tr>
-                        <tr>
-                          <td className="py-2.5">Expected Delay</td>
-                          <td className="py-2.5 text-[#991B1B]">+{baselineDelayVal} Hours</td>
-                          <td className="py-2.5 text-[#047857] font-black">+{optimizedDelayVal} Hours</td>
-                          <td className="py-2.5 text-[#047857] font-black">-{delaySavedVal} Hours</td>
-                        </tr>
-                        <tr>
-                          <td className="py-2.5">Expected Loss</td>
-                          <td className="py-2.5 text-[#991B1B]">${baselineLossVal.toLocaleString()} USD</td>
-                          <td className="py-2.5 text-[#047857] font-black">${expectedLossVal.toLocaleString()} USD</td>
-                          <td className="py-2.5 text-[#047857] font-black">-${savedLossVal.toLocaleString()} USD</td>
-                        </tr>
-                        <tr>
-                          <td className="py-2.5">Transport Cost</td>
-                          <td className="py-2.5">${baselineCost.toLocaleString()} USD</td>
-                          <td className="py-2.5 text-stone-950 font-black">${optimizedCost.toLocaleString()} USD</td>
-                          <td className="py-2.5 text-stone-600 font-black">+${rerouteCostVal.toLocaleString()} USD</td>
-                        </tr>
-                        <tr>
-                          <td className="py-2.5">Service Level</td>
-                          <td className="py-2.5 text-stone-500">71%</td>
-                          <td className="py-2.5 text-[#047857] font-black">94%</td>
-                          <td className="py-2.5 text-[#047857] font-black">+23 pts</td>
-                        </tr>
-                        <tr>
-                          <td className="py-2.5">Shipments at Risk</td>
-                          <td className="py-2.5 text-[#991B1B]">142 SKU Lines</td>
-                          <td className="py-2.5 text-[#047857] font-black">31 SKU Lines</td>
-                          <td className="py-2.5 text-[#047857] font-black">-111 SKU Lines</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-4 font-mono text-center">
+              <div className="rounded bg-stone-50 p-4 border border-stone-200 space-y-1">
+                <span className="text-[10px] text-stone-500 font-extrabold block">RISK REDUCTION</span>
+                <span className="text-xl font-black text-[#047857] block">{decision.baselineRiskPct}% → {decision.optimizedRiskPct}%</span>
+                <span className="text-[9px] text-[#047857] font-bold block">-{decision.riskDelta} percentage points</span>
               </div>
-            )
-          })()}
+              <div className="rounded bg-stone-50 p-4 border border-stone-200 space-y-1">
+                <span className="text-[10px] text-stone-500 font-extrabold block">DELAY REDUCTION</span>
+                <span className="text-xl font-black text-[#047857] block">+{decision.baselineDelayVal}H → +{decision.optimizedDelayVal}H</span>
+                <span className="text-[9px] text-[#047857] font-bold block">{decision.delaySavedVal} Hours Saved</span>
+              </div>
+              <div className="rounded bg-stone-50 p-4 border border-stone-200 space-y-1">
+                <span className="text-[10px] text-stone-500 font-extrabold block">EXPECTED LOSS</span>
+                <span className="text-xl font-black text-[#047857] block">${Math.round(decision.baselineLossVal/1000)}K → ${Math.round(decision.expectedLossVal/1000)}K</span>
+                <span className="text-[9px] text-[#047857] font-bold block">-${decision.savedLossVal.toLocaleString()} USD Loss</span>
+              </div>
+              <div className="rounded bg-stone-50 p-4 border border-stone-200 space-y-1">
+                <span className="text-[10px] text-stone-500 font-extrabold block">TRANSPORT COST</span>
+                <span className="text-xl font-black text-stone-900 block">${Math.round(decision.baselineCost/1000)}K → ${Math.round(decision.optimizedCost/1000)}K</span>
+                <span className="text-[9px] text-stone-600 font-bold block">+${(decision.rerouteCostVal/1000).toFixed(1)}K Extra Transport</span>
+              </div>
+            </div>
+
+            {/* SECTION 2: Key Business Highlight Card */}
+            <div className="rounded-lg bg-[#047857] text-white p-6 font-mono flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
+              <div>
+                <span className="text-xs font-black tracking-widest text-emerald-100 block">KEY BUSINESS RESULT ({decision.originPort.toUpperCase()} → {decision.destPort.toUpperCase()})</span>
+                <span className="text-3xl md:text-5xl font-black block mt-1">${decision.savedLossVal.toLocaleString()} USD</span>
+                <span className="text-xs text-emerald-100 font-bold block mt-1">EXPECTED FINANCIAL LOSS AVOIDED</span>
+              </div>
+              <div className="text-right text-xs text-emerald-100 font-bold space-y-1">
+                <div>Additional Transport Cost: <span className="font-black text-white">${decision.rerouteCostVal.toLocaleString()} USD</span></div>
+                <div>Net Financial Benefit: <span className="font-black text-white">+${decision.netBenefitVal.toLocaleString()} USD</span></div>
+              </div>
+            </div>
+
+            {/* SECTION 3: BEFORE VS FLOWFORGE TABLE */}
+            <div className="rounded-lg border border-stone-300 bg-white p-6 shadow-2xs space-y-4 font-mono text-xs">
+              <span className="text-xs font-black text-stone-900 block">SECTION 3 · WHAT CHANGES? (CURRENT PLAN VS FLOWFORGE PLAN)</span>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b-2 border-stone-300 text-[10px] text-stone-500 font-black">
+                      <th className="py-2">OPERATIONAL METRIC</th>
+                      <th className="py-2">CURRENT PLAN ({decision.destPort.toUpperCase()})</th>
+                      <th className="py-2 text-[#047857]">FLOWFORGE PLAN ({decision.selectedRouteName.toUpperCase()}) ★</th>
+                      <th className="py-2 text-stone-600">DELTA / IMPROVEMENT</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-stone-200 font-bold text-stone-800">
+                    <tr>
+                      <td className="py-2.5">Disruption Risk</td>
+                      <td className="py-2.5 text-[#991B1B]">{decision.baselineRiskPct}%</td>
+                      <td className="py-2.5 text-[#047857] font-black">{decision.optimizedRiskPct}%</td>
+                      <td className="py-2.5 text-[#047857] font-black">-{decision.riskDelta} pts</td>
+                    </tr>
+                    <tr>
+                      <td className="py-2.5">Expected Delay</td>
+                      <td className="py-2.5 text-[#991B1B]">+{decision.baselineDelayVal} Hours</td>
+                      <td className="py-2.5 text-[#047857] font-black">+{decision.optimizedDelayVal} Hours</td>
+                      <td className="py-2.5 text-[#047857] font-black">-{decision.delaySavedVal} Hours</td>
+                    </tr>
+                    <tr>
+                      <td className="py-2.5">Expected Loss</td>
+                      <td className="py-2.5 text-[#991B1B]">${decision.baselineLossVal.toLocaleString()} USD</td>
+                      <td className="py-2.5 text-[#047857] font-black">${decision.expectedLossVal.toLocaleString()} USD</td>
+                      <td className="py-2.5 text-[#047857] font-black">-${decision.savedLossVal.toLocaleString()} USD</td>
+                    </tr>
+                    <tr>
+                      <td className="py-2.5">Transport Cost</td>
+                      <td className="py-2.5">${decision.baselineCost.toLocaleString()} USD</td>
+                      <td className="py-2.5 text-stone-950 font-black">${decision.optimizedCost.toLocaleString()} USD</td>
+                      <td className="py-2.5 text-stone-600 font-black">+${decision.rerouteCostVal.toLocaleString()} USD</td>
+                    </tr>
+                    <tr>
+                      <td className="py-2.5">Service Level</td>
+                      <td className="py-2.5 text-stone-500">{Math.max(40, 95 - decision.riskDelta)}%</td>
+                      <td className="py-2.5 text-[#047857] font-black">{Math.min(98, 95 - Math.round(decision.riskDelta * 0.1))}%</td>
+                      <td className="py-2.5 text-[#047857] font-black">+{Math.min(35, decision.riskDelta - 5)} pts</td>
+                    </tr>
+                    <tr>
+                      <td className="py-2.5">Shipments at Risk</td>
+                      <td className="py-2.5 text-[#991B1B]">{decision.shipmentCount} SKU Lines</td>
+                      <td className="py-2.5 text-[#047857] font-black">{decision.safeCount} SKU Lines</td>
+                      <td className="py-2.5 text-[#047857] font-black">-{decision.shipmentCount - decision.safeCount} SKU Lines</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
 
         {/* ── SECTION 4 & 5: WHY FLOWFORGE CHOSE THIS & ALTERNATIVES EVALUATED ─ */}
         <div className="grid gap-6 md:grid-cols-2">
@@ -545,7 +568,7 @@ export default function DecisionsPage() {
           <div className="rounded-lg border border-stone-300 bg-white p-6 shadow-2xs space-y-4 font-mono text-xs">
             <span className="font-black text-stone-900 block">SECTION 4 · WHY FLOWFORGE CHOSE THIS</span>
             <div className="space-y-3">
-              {decisionDrivers.map((drv, i) => (
+              {decision.drivers.map((drv, i) => (
                 <div key={i} className="flex justify-between items-center rounded bg-stone-50 p-2.5 border border-stone-200 font-bold">
                   <span className="text-stone-800">{drv.name}</span>
                   <span className="text-[#D94E28] font-black">{drv.impact}</span>
@@ -553,7 +576,7 @@ export default function DecisionsPage() {
               ))}
             </div>
             <div className="rounded bg-orange-50/70 p-4 border-l-4 border-[#D94E28] text-stone-900 font-bold leading-relaxed text-[11px]">
-              "FlowForge selected the Antwerp route because it materially reduces disruption exposure while maintaining acceptable transport cost and service reliability."
+              &quot;FlowForge selected the {decision.selectedRouteName} route because it materially reduces disruption exposure while maintaining acceptable transport cost and service reliability for cargo from {decision.originPort} to {decision.destPort}.&quot;
             </div>
           </div>
 
@@ -563,37 +586,43 @@ export default function DecisionsPage() {
             <div className="space-y-3">
               <div className="rounded border border-red-300 bg-red-50 p-3 space-y-1">
                 <div className="flex justify-between text-stone-900 font-black">
-                  <span>CURRENT ROUTE (ROTTERDAM)</span>
+                  <span>CURRENT ROUTE ({decision.originPort})</span>
                   <span className="text-[#991B1B]">STATUS: REJECTED</span>
                 </div>
                 <div className="flex justify-between text-[10px] text-stone-700 font-bold">
-                  <span>Risk: 73%</span><span>Delay: +18.4H</span><span>Loss: $82K</span>
+                  <span>Risk: {decision.baselineRiskPct}%</span>
+                  <span>Delay: +{decision.baselineDelayVal}H</span>
+                  <span>Loss: ${Math.round(decision.baselineLossVal / 1000)}K</span>
                 </div>
               </div>
 
               <div className={`rounded p-3 space-y-1 border ${
-                submittedOutcome?.selected_strategy_id === 'Colombo'
+                submittedOutcome?.selected_strategy_id === 'Colombo' || submittedOutcome?.selected_strategy_id === decision.destPort
                   ? 'border-2 border-[#D94E28] bg-orange-50 text-stone-950 font-black'
                   : 'border-amber-300 bg-amber-50 text-stone-900'
               }`}>
                 <div className="flex justify-between font-black">
-                  <span>ROUTE VIA COLOMBO</span>
-                  <span className={submittedOutcome?.selected_strategy_id === 'Colombo' ? 'text-[#D94E28]' : 'text-amber-800'}>
-                    STATUS: {submittedOutcome?.selected_strategy_id === 'Colombo' ? 'HUMAN OVERRIDE' : 'REJECTED'}
+                  <span>ALTERNATIVE ROUTE (MID-RISK)</span>
+                  <span className={submittedOutcome?.selected_strategy_id === decision.destPort ? 'text-[#D94E28]' : 'text-amber-800'}>
+                    STATUS: {submittedOutcome?.selected_strategy_id === decision.destPort ? 'HUMAN OVERRIDE' : 'CONSIDERED'}
                   </span>
                 </div>
                 <div className="flex justify-between text-[10px] font-bold">
-                  <span>Risk: 42%</span><span>Delay: +9.1H</span><span>Loss: $41K</span>
+                  <span>Risk: {decision.altMidRisk}%</span>
+                  <span>Delay: +{decision.altMidDelay}H</span>
+                  <span>Loss: ${Math.round(decision.altMidLoss / 1000)}K</span>
                 </div>
               </div>
 
               <div className="rounded border-2 border-[#047857] bg-[#ECFDF5] p-3 space-y-1">
                 <div className="flex justify-between text-[#064E3B] font-black">
-                  <span>ROUTE VIA ANTWERP ★</span>
+                  <span>{decision.selectedRouteName.toUpperCase()} ★</span>
                   <span className="text-[#047857]">STATUS: AI RECOMMENDED</span>
                 </div>
                 <div className="flex justify-between text-[10px] text-[#065F46] font-black">
-                  <span>Risk: 28%</span><span>Delay: +5.2H</span><span>Loss: $19K</span>
+                  <span>Risk: {decision.optimizedRiskPct}%</span>
+                  <span>Delay: +{decision.optimizedDelayVal}H</span>
+                  <span>Loss: ${Math.round(decision.expectedLossVal / 1000)}K</span>
                 </div>
               </div>
             </div>
@@ -606,7 +635,7 @@ export default function DecisionsPage() {
           <div className="rounded-lg border border-stone-300 bg-white p-6 shadow-2xs space-y-4 font-mono text-xs">
             <span className="font-black text-stone-900 block">SECTION 8 · PROPOSING OPERATIONAL EXECUTION PLAN</span>
             <div className="space-y-2.5">
-              {executionSteps.map((s) => (
+              {decision.steps.map((s) => (
                 <div key={s.step} className="flex items-start gap-3 rounded bg-stone-50 p-2.5 border border-stone-200">
                   <span className="font-black text-[#D94E28] w-6">{s.step}</span>
                   <div>
