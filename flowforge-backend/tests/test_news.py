@@ -1,7 +1,9 @@
 import sys
 import json
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+backend_dir = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(backend_dir))
+sys.path.insert(0, str(backend_dir / "app"))
 
 from collectors.news import get_latest_news
 

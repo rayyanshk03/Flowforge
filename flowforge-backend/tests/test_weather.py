@@ -2,9 +2,9 @@ import sys
 import json
 from pathlib import Path
 
-# Add backend directory to sys.path
 backend_dir = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(backend_dir))
+sys.path.insert(0, str(backend_dir / "app"))
 
 from collectors.weather import get_weather, get_weather_geojson
 

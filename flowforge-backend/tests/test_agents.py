@@ -149,7 +149,7 @@ class TestDisruptionAgent:
         expected_class = "DISRUPTED" if result.disruption_probability >= threshold else "STABLE"
         assert result.disruption_class == expected_class
         assert result.decision_threshold == threshold
-        assert result.risk_level in ["CRITICAL_ALERT", "ELEVATED", "STABLE"]
+        assert result.risk_level in ["CRITICAL", "HIGH", "MEDIUM", "LOW"]
 
     def test_contributing_features_match_training_names(self, registry):
         """The 3 contributing features must match exact training feature names."""
@@ -227,7 +227,7 @@ class TestDisruptionAgent:
             f"must be >= low-stress ({low_result.disruption_probability})"
         )
         # risk_level and disruption_class must be consistent with the threshold
-        assert high_result.risk_level in ["CRITICAL_ALERT", "ELEVATED", "STABLE"]
+        assert high_result.risk_level in ["CRITICAL", "HIGH", "MEDIUM", "LOW"]
         assert high_result.disruption_class in ["DISRUPTED", "STABLE"]
 
     def test_output_fields_complete(self, registry):
