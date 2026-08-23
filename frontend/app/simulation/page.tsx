@@ -686,20 +686,46 @@ export default function SimulationPage() {
                   <div className="space-y-2 pt-2 font-mono">
                     <div className="flex justify-between text-xs font-bold text-stone-700">
                       <span>Simulated Delay Distribution (10,000 Scenarios)</span>
-                      <span>Expected Delay: {simResults.expectedDelay} · Worst-Case: +24.8H</span>
+                      <span>
+                        Expected Delay: <strong className="text-[#D94E28] font-black">{simResults.expectedDelay}</strong> · Worst-Case: <strong className="text-[#991B1B] font-black">+{((parseFloat(simResults.p95Eta) || 20) * 1.22).toFixed(1)}H</strong>
+                      </span>
                     </div>
-                    <div className="flex items-end gap-1.5 h-36 border-b border-stone-300 pb-1">
-                      <div className="bg-stone-300 w-[8%] h-[20%]" title="+2H (2%)" />
-                      <div className="bg-[#047857] w-[12%] h-[45%]" title="+4H (18%)" />
-                      <div className="bg-[#D94E28] w-[25%] h-[95%]" title={`${simResults.p50Eta} (P50 Median)`} />
-                      <div className="bg-amber-600 w-[22%] h-[65%]" title={`${simResults.p75Eta} (P75)`} />
-                      <div className="bg-amber-700 w-[18%] h-[40%]" title={`${simResults.p90Eta} (P90)`} />
-                      <div className="bg-[#991B1B] w-[15%] h-[25%]" title={`${simResults.p95Eta} (P95 Tail)`} />
+                    <div className="flex items-end gap-1.5 h-36 border-b border-stone-300 pb-1 transition-all">
+                      <div
+                        className="bg-stone-300 w-[8%] transition-all duration-300"
+                        style={{ height: `${Math.min(100, Math.max(12, (parseFloat(simResults.p50Eta) || 8) * 2.8))}%` }}
+                        title="+2.0H"
+                      />
+                      <div
+                        className="bg-[#047857] w-[12%] transition-all duration-300"
+                        style={{ height: `${Math.min(100, Math.max(22, (parseFloat(simResults.p50Eta) || 8) * 6.2))}%` }}
+                        title={`+${((parseFloat(simResults.p50Eta) || 8) * 0.6).toFixed(1)}H`}
+                      />
+                      <div
+                        className="bg-[#D94E28] w-[25%] transition-all duration-300"
+                        style={{ height: `${Math.min(100, Math.max(45, (parseFloat(simResults.p50Eta) || 8) * 10.5))}%` }}
+                        title={`${simResults.p50Eta} (P50 Median)`}
+                      />
+                      <div
+                        className="bg-amber-600 w-[22%] transition-all duration-300"
+                        style={{ height: `${Math.min(100, Math.max(30, (parseFloat(simResults.p75Eta) || 12) * 5.8))}%` }}
+                        title={`${simResults.p75Eta} (P75)`}
+                      />
+                      <div
+                        className="bg-amber-700 w-[18%] transition-all duration-300"
+                        style={{ height: `${Math.min(100, Math.max(20, (parseFloat(simResults.p90Eta) || 50) * 0.75))}%` }}
+                        title={`${simResults.p90Eta} (P90)`}
+                      />
+                      <div
+                        className="bg-[#991B1B] w-[15%] transition-all duration-300"
+                        style={{ height: `${Math.min(100, Math.max(15, (parseFloat(simResults.p95Eta) || 100) * 0.45))}%` }}
+                        title={`${simResults.p95Eta} (P95 Tail)`}
+                      />
                     </div>
                     <div className="flex justify-between text-[10px] text-stone-500 font-mono font-bold pt-1">
                       <span>+2.0 Hours</span>
-                      <span>+6.0 Hours</span>
-                      <span>+10.0 Hours</span>
+                      <span>+{(parseFloat(simResults.p50Eta) || 8).toFixed(1)} Hours</span>
+                      <span>+{(parseFloat(simResults.p75Eta) || 13).toFixed(1)} Hours</span>
                       <span>{simResults.p95Eta} (Tail Risk)</span>
                     </div>
                   </div>
