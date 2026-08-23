@@ -457,15 +457,26 @@ export default function NetworkPage() {
                           <span className="text-[10px] font-black text-stone-500 uppercase tracking-widest">
                             RECOMMENDED ACTION:
                           </span>
-                          <span className={`px-3 py-1 rounded text-[10px] font-black ${
-                            r.decisionReasons.status === 'APPROVE'
-                              ? 'bg-emerald-100 border border-emerald-500 text-emerald-900'
-                              : r.decisionReasons.status === 'PAUSE'
-                              ? 'bg-amber-100 border border-amber-500 text-amber-900'
-                              : 'bg-red-100 border border-red-500 text-red-900'
-                          }`}>
-                            {r.decisionReasons.status === 'APPROVE' ? '✅ CHOOSE / APPROVE' : r.decisionReasons.status === 'PAUSE' ? '⏸️ PAUSE / STANDBY' : '🚫 SKIP / REJECT'}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setIsReportModalOpen(true)
+                              }}
+                              className="px-2.5 py-1 rounded bg-[#D94E28] hover:bg-[#C8401C] text-white text-[10px] font-black flex items-center gap-1 shadow-2xs"
+                            >
+                              <Download className="size-3" /> DOWNLOAD REPORT 📥
+                            </button>
+                            <span className={`px-3 py-1 rounded text-[10px] font-black ${
+                              r.decisionReasons.status === 'APPROVE'
+                                ? 'bg-emerald-100 border border-emerald-500 text-emerald-900'
+                                : r.decisionReasons.status === 'PAUSE'
+                                ? 'bg-amber-100 border border-amber-500 text-amber-900'
+                                : 'bg-red-100 border border-red-500 text-red-900'
+                            }`}>
+                              {r.decisionReasons.status === 'APPROVE' ? '✅ CHOOSE / APPROVE' : r.decisionReasons.status === 'PAUSE' ? '⏸️ PAUSE / STANDBY' : '🚫 SKIP / REJECT'}
+                            </span>
+                          </div>
                         </div>
 
                         {/* 2. ALL POSSIBLE METRICS BREAKDOWN (4 GRID CARDS) */}
