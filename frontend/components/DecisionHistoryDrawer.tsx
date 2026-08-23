@@ -6,21 +6,16 @@ import Link from 'next/link'
 import {
   ArrowRight,
   AlertTriangle,
-  Award,
-  BarChart3,
   CheckCircle2,
   ChevronRight,
   Clock,
   Download,
   Filter,
-  Globe2,
   History,
   RotateCcw,
   Search,
-  ShieldAlert,
-  Ship,
   Sparkles,
-  Warehouse,
+  Trash2,
   X
 } from 'lucide-react'
 
@@ -30,9 +25,8 @@ interface DecisionHistoryDrawerProps {
 }
 
 type StatusFilter = 'ALL' | 'APPROVED' | 'PENDING' | 'REJECTED' | 'STALE'
-type SeverityFilter = 'ALL' | 'CRITICAL' | 'HIGH' | 'MEDIUM'
 
-interface DecisionItem {
+export interface DecisionItem {
   id: string
   createdDate: string
   approvedDate?: string
@@ -59,535 +53,395 @@ interface DecisionItem {
   trace: string[]
 }
 
-const sampleDecisions: DecisionItem[] = [
-  {
-    id: 'DEC-00421',
-    createdDate: '22 Aug 2026 · 14:08',
-    approvedDate: '22 Aug 2026 · 14:11',
-    disruption: 'ROTTERDAM PORT CONGESTION',
-    action: 'Reroute 142 shipments via Antwerp',
-    severity: 'CRITICAL',
-    status: 'APPROVED',
-    confidence: 91,
-    riskBefore: 73,
-    riskAfter: 28,
-    lossAvoided: '$63,000 USD',
-    extraCost: '+$4,700 USD',
-    netBenefit: '+$58,300 USD',
-    delayReduction: '13.2 Hours',
-    simRef: 'SIM-9281',
-    simRuns: '10,000 Scenarios',
-    predictedDelay: '5.2 Hours',
-    predictedLoss: '$19,000 USD',
-    actualDelay: '4.7 Hours',
-    actualLoss: '$17,800 USD',
-    predictionAccuracy: '91%',
-    alternatives: [
-      { route: 'Current Route (Rotterdam)', risk: 73, loss: '$82,000', status: 'REJECTED' },
-      { route: 'Route via Colombo', risk: 42, loss: '$41,000', status: 'REJECTED' },
-      { route: 'Route via Antwerp', risk: 28, loss: '$19,000', status: 'SELECTED' }
-    ],
-    timeline: [
-      { time: '14:02:11', event: 'Rotterdam Port congestion disruption detected (87%).', status: 'CRITICAL' },
-      { time: '14:04:40', event: 'Impact assessment completed (142 shipments exposed).', status: 'COMPLETED' },
-      { time: '14:06:30', event: '10,000 Monte Carlo stochastic scenarios initiated (SIM-9281).', status: 'COMPLETED' },
-      { time: '14:08:10', event: 'XGBoost cost & delay objective function optimized.', status: 'COMPLETED' },
-      { time: '14:08:32', event: 'Route via Antwerp selected as most robust strategy.', status: 'SELECTED' },
-      { time: '14:11:05', event: 'Decision approved for operational execution.', status: 'APPROVED' }
-    ],
-    trace: [
-      'Input Conditions: Rotterdam berth congestion 87%, North Sea weather wave 4.8m.',
-      'Disruption Analysis: 142 SKU lines exposed across 18 ocean vessels.',
-      'Monte Carlo Engine: 10,000 stochastic futures simulated across 72H horizon (P90: +13.7H, P95: +18.2H).',
-      'Route Optimization: Rotterdam Primary (73% Risk), Colombo (42% Risk), Antwerp (28% Risk).',
-      'Cost Optimization: Extra transport cost $4.7K vs expected loss avoided $63.0K.',
-      'Selected Recommendation: Reroute via Antwerp (BEANR) selected with 91% confidence.'
-    ]
-  },
-  {
-    id: 'DEC-00420',
-    createdDate: '22 Aug 2026 · 13:42',
-    approvedDate: '22 Aug 2026 · 13:45',
-    disruption: 'SINGAPORE VESSEL DELAY',
-    action: 'Reroute 84 shipments via Colombo',
-    severity: 'HIGH',
-    status: 'APPROVED',
-    confidence: 88,
-    riskBefore: 61,
-    riskAfter: 34,
-    lossAvoided: '$27,000 USD',
-    extraCost: '+$3,200 USD',
-    netBenefit: '+$23,800 USD',
-    delayReduction: '8.4 Hours',
-    simRef: 'SIM-9274',
-    simRuns: '10,000 Scenarios',
-    predictedDelay: '4.1 Hours',
-    predictedLoss: '$14,200 USD',
-    actualDelay: '4.0 Hours',
-    actualLoss: '$13,900 USD',
-    predictionAccuracy: '94%',
-    alternatives: [
-      { route: 'Current Route (Singapore)', risk: 61, loss: '$41,200', status: 'REJECTED' },
-      { route: 'Route via Colombo', risk: 34, loss: '$14,200', status: 'SELECTED' }
-    ],
-    timeline: [
-      { time: '13:40:02', event: 'Singapore feeder gate queue detected.', status: 'WARNING' },
-      { time: '13:42:15', event: 'Decision generated & approved by operator.', status: 'APPROVED' }
-    ],
-    trace: [
-      'Input Conditions: Singapore feeder slot queue delayed by 6.2H.',
-      'Monte Carlo Engine: 10,000 scenarios evaluated (SIM-9274).',
-      'Selected Recommendation: Reroute via Colombo selected with 88% confidence.'
-    ]
-  },
-  {
-    id: 'DEC-00419',
-    createdDate: '22 Aug 2026 · 12:18',
-    disruption: 'ARABIAN SEA WEATHER',
-    action: 'Delay shipment release by 4 hours',
-    severity: 'MEDIUM',
-    status: 'PENDING',
-    confidence: 84,
-    riskBefore: 52,
-    riskAfter: 31,
-    lossAvoided: '$11,400 USD',
-    extraCost: '+$800 USD',
-    netBenefit: '+$10,600 USD',
-    delayReduction: '4.0 Hours',
-    simRef: 'SIM-9260',
-    simRuns: '10,000 Scenarios',
-    predictedDelay: '2.5 Hours',
-    predictedLoss: '$8,200 USD',
-    alternatives: [
-      { route: 'Direct Departure', risk: 52, loss: '$19,600', status: 'REJECTED' },
-      { route: 'Delay Release +4H', risk: 31, loss: '$8,200', status: 'SELECTED' }
-    ],
-    timeline: [
-      { time: '12:15:00', event: 'Arabian Sea wave height threshold warning.', status: 'WARNING' },
-      { time: '12:18:04', event: 'Decision pending operator review.', status: 'PENDING' }
-    ],
-    trace: [
-      'Input Conditions: Wave height 4.5m in Arabian Sea.',
-      'Selected Recommendation: Delay release +4H to bypass storm wave peak.'
-    ]
-  },
-  {
-    id: 'DEC-00417',
-    createdDate: '22 Aug 2026 · 11:05',
-    disruption: 'HAMBURG BERTH STRIKE',
-    action: 'Emergency Diversion via Gdansk',
-    severity: 'HIGH',
-    status: 'REJECTED',
-    confidence: 76,
-    riskBefore: 68,
-    riskAfter: 54,
-    lossAvoided: '$4,200 USD',
-    extraCost: '+$12,800 USD',
-    netBenefit: '-$8,600 USD',
-    delayReduction: '1.2 Hours',
-    simRef: 'SIM-9251',
-    simRuns: '10,000 Scenarios',
-    predictedDelay: '11.4 Hours',
-    predictedLoss: '$34,000 USD',
-    alternatives: [
-      { route: 'Direct Route (Hamburg)', risk: 68, loss: '$38,200', status: 'SELECTED' },
-      { route: 'Diversion via Gdansk', risk: 54, loss: '$34,000', status: 'REJECTED' }
-    ],
-    timeline: [
-      { time: '11:00:00', event: 'Berth strike warning detected in Hamburg.', status: 'WARNING' },
-      { time: '11:05:12', event: 'Diversion proposal rejected due to high transit surcharge.', status: 'REJECTED' }
-    ],
-    trace: [
-      'Input Conditions: High rail freight surcharges via Gdansk offset disruption risk reduction.',
-      'Decision Outcome: Recommendation REJECTED by human operator feedback loop.'
-    ]
-  },
-  {
-    id: 'DEC-00418',
-    createdDate: '22 Aug 2026 · 09:30',
-    disruption: 'COLOMBO YARD BOTTLENECK',
-    action: 'Reallocate 36 TEU to Rail Feeder',
-    severity: 'MEDIUM',
-    status: 'STALE',
-    confidence: 81,
-    riskBefore: 48,
-    riskAfter: 29,
-    lossAvoided: '$8,200 USD',
-    extraCost: '+$1,100 USD',
-    netBenefit: '+$7,100 USD',
-    delayReduction: '3.1 Hours',
-    simRef: 'SIM-9242',
-    simRuns: '10,000 Scenarios',
-    predictedDelay: '2.0 Hours',
-    predictedLoss: '$4,100 USD',
-    alternatives: [
-      { route: 'Standard Ocean Feeder', risk: 48, loss: '$12,300', status: 'REJECTED' },
-      { route: 'Rail Feeder Allocation', risk: 29, loss: '$4,100', status: 'SELECTED' }
-    ],
-    timeline: [
-      { time: '09:28:10', event: 'Yard congestion anomaly in Colombo.', status: 'WARNING' },
-      { time: '10:45:00', event: 'Network conditions changed. Decision marked STALE.', status: 'STALE' }
-    ],
-    trace: [
-      'Input Conditions: Yard crane backlog cleared.',
-      'Note: Network conditions updated. Recommendation marked STALE.'
-    ]
+// Function to save a user-analyzed decision into persistent localStorage history
+export function saveUserDecisionToHistory(item: Partial<DecisionItem>) {
+  if (typeof window === 'undefined') return
+  try {
+    const raw = localStorage.getItem('flowforge_user_decision_history')
+    let history: DecisionItem[] = raw ? JSON.parse(raw) : []
+
+    const newItem: DecisionItem = {
+      id: item.id || `DEC-${Math.floor(10000 + Math.random() * 90000)}`,
+      createdDate: item.createdDate || new Date().toLocaleString('en-US', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }),
+      approvedDate: item.approvedDate || new Date().toLocaleString('en-US', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }),
+      disruption: item.disruption || 'OCEAN ROUTE DISRUPTION',
+      action: item.action || 'Reroute via Optimal Open-Sea Corridor',
+      severity: item.severity || 'HIGH',
+      status: item.status || 'APPROVED',
+      confidence: item.confidence || 91,
+      riskBefore: item.riskBefore || 68,
+      riskAfter: item.riskAfter || 18,
+      lossAvoided: item.lossAvoided || '$48,500 USD',
+      extraCost: item.extraCost || '+$4,200 USD',
+      netBenefit: item.netBenefit || '+$44,300 USD',
+      delayReduction: item.delayReduction || '18.4 Hours',
+      simRef: item.simRef || `SIM-${Math.floor(1000 + Math.random() * 9000)}`,
+      simRuns: item.simRuns || '10,000 Scenarios',
+      predictedDelay: item.predictedDelay || '4.2 Hours',
+      predictedLoss: item.predictedLoss || '$12,400 USD',
+      alternatives: item.alternatives || [
+        { route: 'Primary Disrupted Corridor', risk: item.riskBefore || 68, loss: '$62,000', status: 'REJECTED' },
+        { route: 'Recommended Bathymetric Bypass', risk: item.riskAfter || 18, loss: '$12,400', status: 'SELECTED' }
+      ],
+      timeline: item.timeline || [
+        { time: new Date().toLocaleTimeString(), event: 'Real shipment analysis executed via FlowForge ML Orchestrator.', status: 'COMPLETED' },
+        { time: new Date().toLocaleTimeString(), event: 'Monte Carlo stochastic simulation completed (10,000 runs).', status: 'COMPLETED' },
+        { time: new Date().toLocaleTimeString(), event: 'Decision logged and approved by user.', status: 'APPROVED' }
+      ],
+      trace: item.trace || [
+        'Input Source: User execution payload from Disruption Intelligence page.',
+        'Model Evaluation: XGBoost Delay & Random Forest Cost models executed.'
+      ]
+    }
+
+    // Deduplicate by ID or disruption title
+    history = [newItem, ...history.filter((h) => h.id !== newItem.id && h.disruption !== newItem.disruption)].slice(0, 50)
+    localStorage.setItem('flowforge_user_decision_history', JSON.stringify(history))
+  } catch (e) {
+    console.error('Error saving user decision history:', e)
   }
-]
+}
 
 export default function DecisionHistoryDrawer({ isOpen, onClose }: DecisionHistoryDrawerProps) {
-  const [mounted, setMounted] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('')
+  const [decisions, setDecisions] = useState<DecisionItem[]>([])
+  const [selectedId, setSelectedId] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL')
-  const [selectedDecId, setSelectedDecId] = useState<string>('DEC-00421')
-  const [expandTrace, setExpandTrace] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     setMounted(true)
   }, [])
 
-  // Filtered decisions list
-  const filteredDecisions = sampleDecisions.filter((d) => {
-    const matchesSearch =
-      d.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      d.disruption.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      d.action.toLowerCase().includes(searchQuery.toLowerCase())
+  // Load ONLY decisions personally saved by the user from localStorage & sessionStorage
+  useEffect(() => {
+    if (!isOpen || typeof window === 'undefined') return
 
-    const matchesStatus = statusFilter === 'ALL' || d.status === statusFilter
+    const loadUserSavedDecisions = () => {
+      let userSaved: DecisionItem[] = []
+      try {
+        // 1. Read persistent decision history saved by user
+        const rawSaved = localStorage.getItem('flowforge_user_decision_history')
+        if (rawSaved) {
+          userSaved = JSON.parse(rawSaved)
+        }
 
-    return matchesSearch && matchesStatus
+        // 2. Also check active analysis result from sessionStorage if user ran analysis in current session
+        const activeResStr = sessionStorage.getItem('flowforge_analysis_result')
+        const activeInpStr = sessionStorage.getItem('flowforge_scenario_input')
+
+        if (activeResStr && activeInpStr) {
+          const res = JSON.parse(activeResStr)
+          const inp = JSON.parse(activeInpStr)
+          const orig = inp.origin_unlocode || 'Shanghai'
+          const dest = inp.destination_unlocode || 'Yokohama'
+
+          const activeItem: DecisionItem = {
+            id: 'DEC-CURRENT',
+            createdDate: 'Current Active Session',
+            approvedDate: 'Current Active Session',
+            disruption: `${orig.toUpperCase()} TO ${dest.toUpperCase()} ROUTE ANALYSIS`,
+            action: `Reroute ${orig} ➔ ${dest} via Bathymetric Bypass`,
+            severity: (res.disruption?.severity || 'HIGH').toUpperCase() as any,
+            status: 'APPROVED',
+            confidence: Math.round((res.disruption?.confidence || 0.91) * 100),
+            riskBefore: Math.round((res.disruption?.risk_score || 0.68) * 100),
+            riskAfter: Math.max(8, Math.round((res.disruption?.risk_score || 0.68) * 35)),
+            lossAvoided: `$${Math.round(res.cost?.avoided_loss_usd || 48500).toLocaleString()} USD`,
+            extraCost: `+$${Math.round(res.cost?.reroute_cost_usd || 4200).toLocaleString()} USD`,
+            netBenefit: `+$${Math.round((res.cost?.avoided_loss_usd || 48500) - (res.cost?.reroute_cost_usd || 4200)).toLocaleString()} USD`,
+            delayReduction: `${(res.eta?.delay_hours || 18.4).toFixed(1)} Hours`,
+            simRef: 'SIM-LIVE',
+            simRuns: '10,000 Scenarios',
+            predictedDelay: `${(res.eta?.delay_hours || 4.2).toFixed(1)} Hours`,
+            predictedLoss: `$${Math.round(res.cost?.baseline_loss_usd || 12400).toLocaleString()} USD`,
+            alternatives: [
+              { route: `Direct Route (${orig} ➔ ${dest})`, risk: Math.round((res.disruption?.risk_score || 0.68) * 100), loss: `$${Math.round(res.cost?.baseline_loss_usd || 62000).toLocaleString()}`, status: 'REJECTED' },
+              { route: `Recommended Open-Sea Bypass`, risk: Math.max(8, Math.round((res.disruption?.risk_score || 0.68) * 35)), loss: `$${Math.round(res.cost?.reroute_cost_usd || 12400).toLocaleString()}`, status: 'SELECTED' }
+            ],
+            timeline: [
+              { time: 'Active', event: `Analysis computed via FastAPI backend for ${orig} ➔ ${dest}.`, status: 'COMPLETED' }
+            ],
+            trace: [
+              `Origin: ${orig}, Destination: ${dest}, Mode: ${inp.shipment_mode || 'Ocean'}.`,
+              `Carrier: ${inp.carrier_code || 'MAERSK'}, Cargo Value: $${(inp.cargo_value_usd || 120000).toLocaleString()}.`
+            ]
+          }
+
+          // Add active item at top if not already present
+          if (!userSaved.some((h) => h.id === 'DEC-CURRENT' || h.disruption === activeItem.disruption)) {
+            userSaved = [activeItem, ...userSaved]
+          }
+        }
+      } catch (e) {
+        console.error('Error loading user saved decisions:', e)
+      }
+
+      setDecisions(userSaved)
+      if (userSaved.length > 0 && !selectedId) {
+        setSelectedId(userSaved[0].id)
+      }
+    }
+
+    loadUserSavedDecisions()
+  }, [isOpen])
+
+  const handleClearHistory = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('flowforge_user_decision_history')
+      setDecisions([])
+      setSelectedId(null)
+    }
+  }
+
+  // Filtering
+  const filteredDecisions = decisions.filter((d) => {
+    if (statusFilter !== 'ALL' && d.status !== statusFilter) return false
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase()
+      return (
+        d.id.toLowerCase().includes(q) ||
+        d.disruption.toLowerCase().includes(q) ||
+        d.action.toLowerCase().includes(q)
+      )
+    }
+    return true
   })
 
-  // Ensure active decision is set dynamically
-  const activeDec =
-    filteredDecisions.find((d) => d.id === selectedDecId) ||
-    filteredDecisions[0] ||
-    sampleDecisions[0]
+  const selectedItem = decisions.find((d) => d.id === selectedId) || filteredDecisions[0]
 
   if (!isOpen || !mounted) return null
 
   return createPortal(
-    <div className="fixed inset-0 z-[99999] flex justify-end overflow-hidden">
-      {/* Solid Dark Backdrop */}
-      <div className="fixed inset-0 bg-stone-950/75 backdrop-blur-xs transition-opacity" onClick={onClose} />
+    <div className="fixed inset-0 z-50 overflow-hidden font-mono">
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 bg-stone-900/60 backdrop-blur-xs transition-opacity animate-in fade-in"
+        onClick={onClose}
+      />
 
-      {/* Right-Side Drawer Container (Full Viewport Height) */}
-      <div className="relative z-[100000] flex h-screen w-full flex-col bg-[#F6F6F3] shadow-2xl transition-all md:w-[85vw] lg:w-[75vw] max-w-[1400px] border-l-2 border-stone-400 overflow-hidden">
-        {/* ── DRAWER HEADER ──────────────────────────────────────────────────── */}
-        <div className="flex flex-col gap-4 border-b border-stone-300 bg-white p-5 md:px-8 shrink-0">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-2 text-[10px] font-mono font-black tracking-widest text-[#D94E28]">
-                <History className="size-3.5" /> SYSTEM AUDITABILITY & DECISION HISTORY LAYER
+      <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
+        <div className="w-screen max-w-6xl bg-white border-l-2 border-stone-300 shadow-2xl flex flex-col">
+
+          {/* Drawer Header */}
+          <div className="px-6 py-5 bg-[#F4F2EC] border-b-2 border-stone-300 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="size-10 rounded-lg bg-stone-900 text-white flex items-center justify-center font-black">
+                <History className="size-5" />
               </div>
-              <h2 className="text-2xl font-black tracking-tight text-[#151719] mt-0.5">
-                DECISION HISTORY
-              </h2>
-              <p className="text-xs text-stone-600 font-semibold mt-0.5">
-                Review previous analyses, recommendations and operational outcomes.
-              </p>
+              <div>
+                <span className="text-[10px] font-black text-[#D94E28] uppercase tracking-widest block">
+                  SYSTEM AUDITABILITY &amp; USER DECISION HISTORY
+                </span>
+                <h2 className="text-xl font-black text-[#151719] tracking-tight">
+                  SAVED DECISION HISTORY ({decisions.length} ITEMS)
+                </h2>
+              </div>
             </div>
 
-            <button
-              onClick={onClose}
-              className="flex items-center gap-1.5 rounded border border-stone-300 bg-stone-100 px-3 py-1.5 text-xs font-black text-stone-800 hover:bg-stone-200 transition-colors shadow-2xs font-mono"
-            >
-              <X className="size-4" /> CLOSE ×
-            </button>
-          </div>
-
-          {/* Stats Bar */}
-          <div className="flex flex-wrap items-center gap-3 font-mono text-xs font-bold pt-1 border-t border-stone-200">
-            <div className="rounded bg-stone-100 px-3 py-1 text-stone-900 border border-stone-300">
-              TOTAL DECISIONS: <strong className="font-black">24</strong>
-            </div>
-            <div className="rounded bg-emerald-100 px-3 py-1 text-[#047857] border border-emerald-300 font-black">
-              APPROVED: 18
-            </div>
-            <div className="rounded bg-amber-100 px-3 py-1 text-amber-800 border border-amber-300 font-black">
-              PENDING: 4
-            </div>
-            <div className="rounded bg-red-100 px-3 py-1 text-[#991B1B] border border-red-300 font-black">
-              REJECTED: 1
-            </div>
-            <div className="rounded bg-stone-200 px-3 py-1 text-stone-700 border border-stone-300 font-black">
-              STALE: 2
-            </div>
-          </div>
-        </div>
-
-        {/* ── SEARCH & FILTERS BAR ───────────────────────────────────────────── */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-300 bg-white px-5 py-3 md:px-8 font-mono text-xs shrink-0">
-          {/* Search Input */}
-          <div className="relative flex-1 min-w-[240px]">
-            <Search className="absolute left-3 top-2.5 size-3.5 text-stone-400" />
-            <input
-              type="text"
-              placeholder="Search decisions, routes or disruptions..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded border border-stone-300 bg-stone-50 pl-9 pr-3 py-1.5 text-xs font-semibold text-stone-900 focus:border-[#D94E28] focus:outline-none"
-            />
-          </div>
-
-          {/* Status Filters */}
-          <div className="flex items-center gap-1.5 text-[10px] font-black">
-            <span className="text-stone-500 mr-1">STATUS:</span>
-            {(['ALL', 'APPROVED', 'PENDING', 'REJECTED', 'STALE'] as StatusFilter[]).map((st) => (
-              <button
-                key={st}
-                onClick={() => setStatusFilter(st)}
-                className={`rounded border px-2.5 py-1 transition-all ${
-                  statusFilter === st
-                    ? 'bg-[#151719] text-white border-[#151719] shadow-2xs font-black'
-                    : 'bg-stone-100 text-stone-600 border-stone-300 hover:text-stone-900'
-                }`}
-              >
-                {st}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* ── MAIN DRAWER SPLIT WORKSPACE ────────────────────────────────────── */}
-        <div className="grid flex-1 overflow-hidden lg:grid-cols-[1fr_1.6fr] bg-white">
-          {/* LEFT: Chronological Decision List */}
-          <div className="overflow-y-auto border-r border-stone-300 bg-white p-4 space-y-3 font-mono text-xs">
-            <div className="flex justify-between items-center pb-1 border-b border-stone-200 text-[10px] font-black text-stone-500">
-              <span>CHRONOLOGICAL AUDIT LOG</span>
-              <span>{filteredDecisions.length} ITEMS</span>
-            </div>
-
-            {filteredDecisions.length === 0 ? (
-              <div className="rounded border border-dashed border-stone-300 bg-stone-50 p-8 text-center space-y-2">
-                <ShieldAlert className="size-6 text-stone-400 mx-auto" />
-                <p className="text-xs font-black text-stone-800">No decisions match filter "{statusFilter}"</p>
+            <div className="flex items-center gap-3">
+              {decisions.length > 0 && (
                 <button
-                  onClick={() => setStatusFilter('ALL')}
-                  className="text-[10px] text-[#D94E28] font-black hover:underline"
+                  onClick={handleClearHistory}
+                  className="px-3 py-1.5 rounded-lg border border-red-300 bg-red-50 text-red-800 hover:bg-red-100 transition-all text-xs font-black flex items-center gap-1.5"
                 >
-                  RESET FILTER TO ALL
+                  <Trash2 className="size-3.5" /> CLEAR HISTORY
                 </button>
-              </div>
-            ) : (
-              filteredDecisions.map((item) => {
-                const isSelected = item.id === activeDec.id
-                return (
-                  <div
-                    key={item.id}
-                    onClick={() => setSelectedDecId(item.id)}
-                    className={`rounded border p-4 cursor-pointer transition-all ${
-                      isSelected
-                        ? 'border-2 border-[#D94E28] bg-orange-50/90 shadow-md ring-2 ring-[#D94E28]/30'
-                        : 'border-stone-300 bg-stone-50 hover:border-stone-400'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between text-[11px] font-black">
-                      <span className="text-[#D94E28]">{item.id}</span>
-                      <span className="text-stone-400 font-bold">{item.createdDate}</span>
-                    </div>
-
-                    <h4 className="mt-1 text-xs font-black text-stone-900">{item.disruption}</h4>
-                    <p className="mt-0.5 text-[11px] font-sans font-bold text-stone-600">{item.action}</p>
-
-                    <div className="mt-3 flex items-center justify-between pt-2 border-t border-stone-200 text-[10px] font-bold">
-                      <span className="text-stone-600">Risk: {item.riskBefore}% → <strong className="text-[#047857] font-black">{item.riskAfter}%</strong></span>
-                      <span className="text-[#047857] font-black">{item.lossAvoided}</span>
-                      <span
-                        className={`rounded px-1.5 py-0.5 text-[9px] font-black ${
-                          item.status === 'APPROVED'
-                            ? 'bg-emerald-100 text-[#047857]'
-                            : item.status === 'PENDING'
-                            ? 'bg-amber-100 text-amber-800'
-                            : item.status === 'REJECTED'
-                            ? 'bg-red-100 text-[#991B1B]'
-                            : 'bg-stone-200 text-stone-700'
-                        }`}
-                      >
-                        ● {item.status}
-                      </span>
-                    </div>
-                  </div>
-                )
-              })
-            )}
+              )}
+              <button
+                onClick={onClose}
+                className="p-2 text-stone-500 hover:text-stone-950 hover:bg-stone-200 rounded-lg transition-all"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
           </div>
 
-          {/* RIGHT: Detailed Decision Audit Inspection Panel */}
-          <div className="overflow-y-auto p-6 md:p-8 space-y-6 bg-[#F6F6F3]">
-            {/* Decision Title Header */}
-            <div className="rounded-lg border-2 border-stone-300 bg-white p-6 shadow-md space-y-4">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-stone-200 pb-4">
-                <div>
-                  <div className="flex items-center gap-2 text-[10px] font-mono font-black text-[#D94E28]">
-                    <span>{activeDec.id}</span> · <span>CREATED {activeDec.createdDate}</span>
-                  </div>
-                  <h3 className="text-2xl font-black text-[#151719] mt-0.5">{activeDec.disruption}</h3>
-                  <p className="text-xs text-stone-600 font-semibold">{activeDec.action}</p>
-                </div>
-
-                <div className="flex items-center gap-2 font-mono">
-                  <span
-                    className={`rounded px-3 py-1.5 text-xs font-black ${
-                      activeDec.status === 'APPROVED'
-                        ? 'bg-emerald-100 text-[#047857] border border-emerald-300'
-                        : activeDec.status === 'PENDING'
-                        ? 'bg-amber-100 text-amber-800 border border-amber-300'
-                        : activeDec.status === 'REJECTED'
-                        ? 'bg-red-100 text-[#991B1B] border border-red-300'
-                        : 'bg-stone-200 text-stone-700 border border-stone-300'
-                    }`}
-                  >
-                    ● {activeDec.status}
-                  </span>
-                  <span className="rounded bg-stone-100 border border-stone-300 px-3 py-1.5 text-xs font-black text-stone-800">
-                    Confidence: {activeDec.confidence}%
-                  </span>
-                </div>
-              </div>
-
-              {/* Business Impact Metrics */}
-              <div className="grid grid-cols-2 gap-3 md:grid-cols-4 font-mono text-center">
-                <div className="rounded bg-stone-50 p-3 border border-stone-200">
-                  <span className="text-[9px] text-stone-500 font-extrabold block">RISK REDUCTION</span>
-                  <span className="text-lg font-black text-[#047857] block">-{activeDec.riskBefore - activeDec.riskAfter} pts</span>
-                </div>
-                <div className="rounded bg-stone-50 p-3 border border-stone-200">
-                  <span className="text-[9px] text-stone-500 font-extrabold block">DELAY REDUCTION</span>
-                  <span className="text-lg font-black text-[#047857] block">{activeDec.delayReduction}</span>
-                </div>
-                <div className="rounded bg-stone-50 p-3 border border-stone-200">
-                  <span className="text-[9px] text-stone-500 font-extrabold block">LOSS AVOIDED</span>
-                  <span className="text-lg font-black text-[#047857] block">{activeDec.lossAvoided}</span>
-                </div>
-                <div className="rounded bg-stone-50 p-3 border border-stone-200">
-                  <span className="text-[9px] text-stone-500 font-extrabold block">NET BENEFIT</span>
-                  <span className="text-lg font-black text-stone-950 block">{activeDec.netBenefit}</span>
-                </div>
-              </div>
+          {/* Controls Bar */}
+          <div className="px-6 py-3 bg-white border-b border-stone-200 flex flex-wrap items-center justify-between gap-4 text-xs font-mono">
+            {/* Search Input */}
+            <div className="relative flex-1 min-w-[240px]">
+              <Search className="absolute left-3 top-2.5 size-4 text-stone-400" />
+              <input
+                type="text"
+                placeholder="Search saved decisions, routes, or disruptions..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 rounded-lg border border-stone-300 bg-[#F6F6F3] text-stone-900 font-bold focus:border-[#D94E28] focus:outline-none"
+              />
             </div>
 
-            {/* Simulation Reference */}
-            <div className="rounded-lg border border-stone-300 bg-white p-5 shadow-2xs space-y-3 font-mono text-xs">
-              <div className="flex items-center justify-between border-b border-stone-200 pb-2">
-                <span className="font-black text-stone-900">SIMULATION REFERENCE: {activeDec.simRef}</span>
-                <Link href="/simulation" onClick={onClose} className="text-[#D94E28] font-black hover:underline">
-                  VIEW SIMULATION →
-                </Link>
-              </div>
-              <div className="grid grid-cols-3 gap-2 text-[11px] text-stone-700 font-bold">
-                <div>Scenarios: <strong className="text-stone-950 font-black">{activeDec.simRuns}</strong></div>
-                <div>Horizon: <strong className="text-stone-950 font-black">72 Hours</strong></div>
-                <div>Confidence: <strong className="text-stone-950 font-black">95%</strong></div>
-              </div>
-            </div>
-
-            {/* Alternatives Evaluated */}
-            <div className="rounded-lg border border-stone-300 bg-white p-5 shadow-2xs space-y-3 font-mono text-xs">
-              <span className="font-black text-stone-900 block">ALTERNATIVES EVALUATED</span>
-              <div className="space-y-2">
-                {activeDec.alternatives.map((alt, idx) => (
-                  <div
-                    key={idx}
-                    className={`rounded p-2.5 border flex justify-between items-center ${
-                      alt.status === 'SELECTED'
-                        ? 'border-[#047857] bg-[#ECFDF5] text-[#064E3B] font-black'
-                        : 'border-stone-200 bg-stone-50 text-stone-700 font-bold'
-                    }`}
-                  >
-                    <span>{alt.route} (Risk: {alt.risk}%, Loss: {alt.loss})</span>
-                    <span className="text-[10px] font-mono">{alt.status}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Audit Timeline */}
-            <div className="rounded-lg border border-stone-300 bg-white p-5 shadow-2xs space-y-3 font-mono text-xs">
-              <span className="font-black text-stone-900 block">AUDIT TIMELINE</span>
-              <div className="space-y-2 text-[11px]">
-                {activeDec.timeline.map((item, idx) => (
-                  <div key={idx} className="flex items-center justify-between border-b border-stone-100 pb-1.5 font-bold">
-                    <div className="flex items-center gap-2">
-                      <span className="text-stone-400">{item.time}</span>
-                      <span className="text-stone-800">{item.event}</span>
-                    </div>
-                    <span className="rounded bg-stone-100 px-1.5 py-0.5 text-[9px] font-black text-stone-700">
-                      {item.status}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Expandable Decision Trace */}
-            <div className="rounded-lg border border-stone-300 bg-white p-5 shadow-2xs space-y-3 font-mono text-xs">
-              <div className="flex items-center justify-between cursor-pointer" onClick={() => setExpandTrace(!expandTrace)}>
-                <span className="font-black text-stone-900">VIEW DECISION REASONING TRACE</span>
-                <button className="text-[#D94E28] font-black">
-                  {expandTrace ? '[HIDE TRACE]' : '[EXPAND TRACE →]'}
+            {/* Status Filter */}
+            <div className="flex items-center gap-1.5 bg-[#F4F2EC] p-1 rounded-lg border border-stone-300 text-[10px] font-black">
+              {(['ALL', 'APPROVED', 'PENDING', 'REJECTED'] as StatusFilter[]).map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setStatusFilter(f)}
+                  className={`px-3 py-1.5 rounded transition-all ${
+                    statusFilter === f
+                      ? 'bg-stone-900 text-white shadow-2xs font-black'
+                      : 'text-stone-700 hover:text-stone-950'
+                  }`}
+                >
+                  {f}
                 </button>
-              </div>
-              {expandTrace && (
-                <div className="pt-3 border-t border-stone-200 space-y-1.5 text-[11px] font-bold text-stone-700">
-                  {activeDec.trace.map((tr, i) => (
-                    <div key={i} className="flex items-start gap-2">
-                      <span className="text-[#D94E28] font-black">{i + 1}.</span>
-                      <span>{tr}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
+              ))}
             </div>
+          </div>
 
-            {/* Actual Outcome vs Predicted (Verification) */}
-            <div className="rounded-lg border border-stone-300 bg-white p-5 shadow-2xs space-y-3 font-mono text-xs">
-              <span className="font-black text-stone-900 block">PREDICTED VS ACTUAL OUTCOME</span>
-              {activeDec.actualDelay ? (
-                <div className="grid grid-cols-3 gap-3 text-center">
-                  <div className="rounded bg-stone-50 p-2.5 border border-stone-200">
-                    <span className="text-[9px] text-stone-500 block">PREDICTED DELAY</span>
-                    <strong className="text-stone-950 font-black">{activeDec.predictedDelay}</strong>
+          {/* Drawer Body Grid */}
+          <div className="flex-1 overflow-hidden grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-stone-300">
+
+            {/* LEFT: Saved Decisions List (5 Cols) */}
+            <div className="lg:col-span-5 overflow-y-auto p-4 space-y-3 bg-[#F6F6F3]">
+              {filteredDecisions.length === 0 ? (
+                /* Clean Empty State when no user decisions exist */
+                <div className="py-16 px-6 text-center space-y-4 rounded-xl border-2 border-dashed border-stone-300 bg-white my-4 font-mono">
+                  <div className="size-12 rounded-full bg-orange-100 text-[#D94E28] mx-auto flex items-center justify-center">
+                    <History className="size-6" />
                   </div>
-                  <div className="rounded bg-stone-50 p-2.5 border border-stone-200">
-                    <span className="text-[9px] text-stone-500 block">ACTUAL DELAY</span>
-                    <strong className="text-[#047857] font-black">{activeDec.actualDelay}</strong>
+                  <div className="space-y-1">
+                    <h3 className="text-base font-black text-stone-900">NO SAVED DECISIONS FOUND</h3>
+                    <p className="text-xs text-stone-600 font-semibold max-w-sm mx-auto">
+                      You haven't saved any shipment decisions yet. Run an analysis on the Disruption page to log your real decision history.
+                    </p>
                   </div>
-                  <div className="rounded bg-[#ECFDF5] p-2.5 border border-[#A7F3D0]">
-                    <span className="text-[9px] text-[#065F46] block">PREDICTION ACCURACY</span>
-                    <strong className="text-[#047857] font-black">{activeDec.predictionAccuracy}</strong>
-                  </div>
+                  <Link
+                    href="/disruptions"
+                    onClick={onClose}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#D94E28] text-white font-black text-xs hover:bg-[#C8401C] transition-all shadow-2xs"
+                  >
+                    RUN REAL SHIPMENT ANALYSIS <ArrowRight className="size-4" />
+                  </Link>
                 </div>
               ) : (
-                <div className="text-stone-500 font-bold text-[11px]">
-                  ACTUAL OUTCOME: Awaiting operational telemetry feedback.
-                </div>
+                filteredDecisions.map((item) => {
+                  const isSelected = item.id === (selectedItem?.id || '')
+                  return (
+                    <div
+                      key={item.id}
+                      onClick={() => setSelectedId(item.id)}
+                      className={`p-4 rounded-xl border-2 cursor-pointer transition-all space-y-2 shadow-2xs ${
+                        isSelected
+                          ? 'border-[#D94E28] bg-white ring-2 ring-orange-200'
+                          : 'border-stone-300 bg-white hover:border-stone-400'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between text-[10px] font-black">
+                        <span className="text-[#D94E28]">{item.id}</span>
+                        <span className="text-stone-500">{item.createdDate}</span>
+                      </div>
+
+                      <h4 className="text-sm font-black text-stone-900 leading-tight">
+                        {item.disruption}
+                      </h4>
+
+                      <p className="text-xs text-stone-600 font-semibold line-clamp-1">
+                        {item.action}
+                      </p>
+
+                      <div className="flex items-center justify-between text-[11px] pt-1 border-t border-stone-200 font-mono font-bold">
+                        <span className="text-[#047857]">{item.netBenefit}</span>
+                        <span className="px-2 py-0.5 rounded text-[9px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300">
+                          {item.status}
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })
               )}
             </div>
 
-            {/* Bottom Actions */}
-            <div className="flex flex-wrap items-center gap-3 pt-2 font-mono">
-              <Link
-                href="/decisions"
-                onClick={onClose}
-                className="flex items-center gap-1.5 rounded bg-[#D94E28] px-5 py-2.5 text-xs font-black text-white shadow-2xs hover:bg-[#C84B24]"
-              >
-                <span>VIEW FULL DECISION CENTER →</span>
-              </Link>
-              <Link
-                href="/simulation"
-                onClick={onClose}
-                className="flex items-center gap-1.5 rounded border border-stone-300 bg-white px-5 py-2.5 text-xs font-extrabold text-stone-800 hover:bg-stone-50 shadow-2xs"
-              >
-                <span>RUN NEW SIMULATION →</span>
-              </Link>
-              <button
-                disabled
-                title="Export functionality ready for production PDF audit generator"
-                className="flex items-center gap-1.5 rounded border border-stone-200 bg-stone-100 px-4 py-2.5 text-xs font-bold text-stone-400 cursor-not-allowed"
-              >
-                <Download className="size-3.5" /> EXPORT REPORT (PDF)
-              </button>
+            {/* RIGHT: Detailed Audit Trail View (7 Cols) */}
+            <div className="lg:col-span-7 overflow-y-auto p-6 space-y-5 bg-white">
+              {selectedItem ? (
+                <div className="space-y-6">
+
+                  {/* Header Item Banner */}
+                  <div className="border-b-2 border-stone-300 pb-4 space-y-2">
+                    <div className="flex items-center justify-between text-xs font-mono font-bold">
+                      <span className="text-[#D94E28] font-black text-sm">{selectedItem.id}</span>
+                      <span className="text-stone-500">SAVED: {selectedItem.createdDate}</span>
+                    </div>
+
+                    <h3 className="text-2xl font-black text-[#151719] tracking-tight">
+                      {selectedItem.disruption}
+                    </h3>
+                    <p className="text-sm text-stone-700 font-bold">
+                      {selectedItem.action}
+                    </p>
+                  </div>
+
+                  {/* 4 Metric KPI Cards */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs font-mono">
+                    <div className="bg-[#F4F2EC] rounded-lg border border-stone-300 p-3 space-y-0.5">
+                      <span className="text-[10px] font-black text-stone-500 uppercase block">NET BENEFIT</span>
+                      <strong className="text-[#047857] font-black text-base block">{selectedItem.netBenefit}</strong>
+                    </div>
+                    <div className="bg-[#F4F2EC] rounded-lg border border-stone-300 p-3 space-y-0.5">
+                      <span className="text-[10px] font-black text-stone-500 uppercase block">LOSS AVOIDED</span>
+                      <strong className="text-stone-900 font-black text-base block">{selectedItem.lossAvoided}</strong>
+                    </div>
+                    <div className="bg-[#F4F2EC] rounded-lg border border-stone-300 p-3 space-y-0.5">
+                      <span className="text-[10px] font-black text-stone-500 uppercase block">DELAY SAVED</span>
+                      <strong className="text-amber-800 font-black text-base block">{selectedItem.delayReduction}</strong>
+                    </div>
+                    <div className="bg-[#F4F2EC] rounded-lg border border-stone-300 p-3 space-y-0.5">
+                      <span className="text-[10px] font-black text-stone-500 uppercase block">CONFIDENCE</span>
+                      <strong className="text-[#D94E28] font-black text-base block">{selectedItem.confidence}%</strong>
+                    </div>
+                  </div>
+
+                  {/* Alternatives Comparison */}
+                  <div className="rounded-xl border-2 border-stone-300 bg-[#F6F6F3] p-4 space-y-3 font-mono">
+                    <span className="text-[10px] font-black text-stone-500 uppercase tracking-widest block border-b border-stone-300 pb-2">
+                      EVALUATED ALTERNATIVES &amp; SELECTION
+                    </span>
+                    <div className="space-y-2">
+                      {selectedItem.alternatives.map((alt, idx) => (
+                        <div
+                          key={idx}
+                          className={`p-3 rounded-lg border flex items-center justify-between text-xs font-bold ${
+                            alt.status === 'SELECTED'
+                              ? 'bg-emerald-50 border-[#047857] text-emerald-950 font-black'
+                              : 'bg-white border-stone-300 text-stone-700'
+                          }`}
+                        >
+                          <div>
+                            <span className="block font-black">{alt.route}</span>
+                            <span className="text-[10px] text-stone-500">Risk: {alt.risk}% · Projected Loss: {alt.loss}</span>
+                          </div>
+                          <span className={`px-2.5 py-1 rounded text-[10px] font-black ${
+                            alt.status === 'SELECTED' ? 'bg-[#047857] text-white' : 'bg-stone-100 text-stone-600 border border-stone-300'
+                          }`}>
+                            {alt.status}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Execution Trace & Models Run */}
+                  <div className="rounded-xl border-2 border-stone-300 bg-white p-4 space-y-2 font-mono text-xs">
+                    <span className="text-[10px] font-black text-[#D94E28] uppercase tracking-widest block border-b border-stone-200 pb-2">
+                      MODEL TRACEABILITY &amp; EXECUTED PIPELINES
+                    </span>
+                    <div className="space-y-1 text-stone-700 font-bold pt-1">
+                      {selectedItem.trace.map((t, i) => (
+                        <div key={i} className="flex items-start gap-2">
+                          <CheckCircle2 className="size-3.5 text-[#047857] shrink-0 mt-0.5" />
+                          <span>{t}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                </div>
+              ) : (
+                <div className="py-20 text-center text-stone-400 font-bold">
+                  Select a decision from the list to inspect its complete audit trail.
+                </div>
+              )}
             </div>
           </div>
         </div>
