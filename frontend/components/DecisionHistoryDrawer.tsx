@@ -213,7 +213,7 @@ export default function DecisionHistoryDrawer({ isOpen, onClose }: DecisionHisto
   if (!isOpen || !mounted) return null
 
   return createPortal(
-    <div className="fixed inset-0 z-50 overflow-hidden font-mono">
+    <div className="fixed inset-0 z-[99999] overflow-hidden font-mono">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-stone-900/60 backdrop-blur-xs transition-opacity animate-in fade-in"

@@ -139,7 +139,7 @@ export default function RerouteReportModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/60 backdrop-blur-sm p-4 overflow-y-auto font-mono animate-in fade-in">
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-stone-900/70 backdrop-blur-sm p-4 overflow-y-auto font-mono animate-in fade-in">
       <div className="bg-white border-2 border-stone-300 rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
 
         {/* Modal Header */}
