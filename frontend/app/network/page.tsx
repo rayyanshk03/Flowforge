@@ -11,6 +11,8 @@ import {
   History,
   ChevronDown,
   ChevronUp,
+  FileText,
+  Download,
 } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import Navbar from '@/components/Navbar'
@@ -21,6 +23,7 @@ import SystemSettingsModal from '@/components/SystemSettingsModal'
 import CreateScenarioModal from '@/components/CreateScenarioModal'
 import MaritimeNetworkGraph from '@/components/MaritimeNetworkGraph'
 import MonteCarloArrivalChart from '@/components/MonteCarloArrivalChart'
+import RerouteReportModal from '@/components/RerouteReportModal'
 
 const GlobalMap = dynamic(() => import('@/components/GlobalMap'), {
   ssr: false,
@@ -41,6 +44,7 @@ export default function NetworkPage() {
   const [statusMenuOpen, setStatusMenuOpen] = useState(false)
   const [expandedCard, setExpandedCard] = useState<string | null>('A')
   const [portStatusFilter, setPortStatusFilter] = useState<'ALL' | 'Heavy' | 'Medium' | 'Normal'>('ALL')
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false)
 
   // Dynamic Scenario State — originPort & destPort are the EXACT names from user input
   const [scenarioState, setScenarioState] = useState({
@@ -364,9 +368,17 @@ export default function NetworkPage() {
 
           {/* RIGHT: User-Friendly & Compact Reroute Options Panel */}
           <div className="w-full lg:w-1/3 shrink-0 rounded-lg border-2 border-stone-300 bg-white p-5 shadow-md space-y-4 font-mono">
-            <div className="border-b border-stone-200 pb-3">
-              <span className="text-[10px] font-black text-[#D94E28]">SECTION 3 · AVAILABLE REROUTES</span>
-              <h3 className="text-base font-black text-[#151719] mt-0.5">{reroutes.length} ALTERNATIVES EVALUATED</h3>
+            <div className="border-b border-stone-200 pb-3 flex items-center justify-between gap-2">
+              <div>
+                <span className="text-[10px] font-black text-[#D94E28]">SECTION 3 · AVAILABLE REROUTES</span>
+                <h3 className="text-base font-black text-[#151719] mt-0.5">{reroutes.length} ALTERNATIVES EVALUATED</h3>
+              </div>
+              <button
+                onClick={() => setIsReportModalOpen(true)}
+                className="rounded-lg bg-[#D94E28] hover:bg-[#C8401C] transition-all px-3 py-2 text-[11px] font-black text-white shadow-2xs flex items-center gap-1.5 shrink-0 active:scale-[0.98]"
+              >
+                <FileText className="size-3.5" /> GENERATE &amp; DOWNLOAD REPORT 📥
+              </button>
             </div>
 
             {/* Compact, User-Friendly Cards */}
@@ -697,6 +709,17 @@ export default function NetworkPage() {
           <div>© {new Date().getFullYear()} FLOWFORGE. ALL RIGHTS RESERVED.</div>
         </div>
       </footer>
+
+      {/* Reroute Recommendation Executive Report & Download Modal */}
+      <RerouteReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        originPort={scenarioState.originPort}
+        destPort={scenarioState.destPort}
+        primaryNm={primaryNm}
+        reroutes={reroutes}
+        vesselName={scenarioState.vessel}
+      />
     </main>
   )
 }
