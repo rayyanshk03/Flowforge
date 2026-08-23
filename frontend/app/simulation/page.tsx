@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import {
   ArrowRight,
@@ -65,37 +65,110 @@ export default function SimulationPage() {
     { time: '13:42', name: 'Singapore Feeder Gap', runs: '10,000', route: 'ROUTE A' }
   ])
 
-  // Dynamic Live Simulation Data from Backend
+  // Backend-sourced static info (ports, carrier, cargo) from sessionStorage
   const [simResults, setSimResults] = useState({
-    originPort: 'Shanghai (CNSHA)',
-    destinationPort: 'Yokohama (JPYOK)',
+    originPort: 'Rotterdam (NLRTM)',
+    destinationPort: 'Singapore (SGSIN)',
     carrierName: 'MAERSK',
     baselineEtaHours: 168,
     cargoValueUsd: 120000,
     cargoWeightMt: 15,
-    p50Eta: '+8.2H',
-    p75Eta: '+13.1H',
-    p90Eta: '+298.2H',
-    p95Eta: '+335.0H',
-    expectedDelay: '+7.1H',
-    p50Cost: '$86,000 USD',
-    p90Cost: '$103,000 USD',
-    p95Cost: '$118,000 USD',
-    p50Risk: '31%',
-    p90Risk: '68%',
-    p95Risk: '79%',
-    riskReduction: '28%',
-    baselineRisk: '73%',
-    baselineDelay: '+18.4H',
-    optimizedDelay: '+5.2H',
-    baselineCost: '$84,000',
-    optimizedCost: '$89,000',
-    baselineLoss: '$82,000',
-    optimizedLoss: '$19,000',
-    expectedLoss: '$19,000 USD',
-    savedLoss: '$63,000 USD',
-    selectedRouteName: 'Antwerp Reroute'
+    selectedRouteName: 'Singapore Diversion'
   })
+
+  // ── COMPUTED MONTE CARLO METRICS ─────────────────────────────────────────
+  // These are computed DIRECTLY from slider state via useMemo.
+  // They CANNOT be overwritten by sessionStorage / loadAnalysisData.
+  const mc = useMemo(() => {
+    const multCong = Math.pow(Math.max(1, congestion) / 50, 1.4)
+    const multWth  = Math.pow(Math.max(1, weather) / 5, 1.25)
+    const multFuel = fuelPrice / 1.60
+    const multDmd  = 1 + demandChange / 100
+    const multWh   = 1.3 - Math.max(30, whCapacity) / 200
+
+    const disMult  = selectedDisruption === 'ROTTERDAM' ? 1.35
+                   : selectedDisruption === 'ARABIAN_SEA' ? 1.85 : 1.45
+    const origStr  = selectedDisruption === 'ROTTERDAM'   ? 'Rotterdam (NLRTM)'
+                   : selectedDisruption === 'ARABIAN_SEA' ? 'Mumbai (INNSA)'
+                   : 'Singapore (SGSIN)'
+    const destStr  = selectedDisruption === 'ROTTERDAM'   ? 'Singapore (SGSIN)'
+                   : selectedDisruption === 'ARABIAN_SEA' ? 'Yokohama (JPYOK)'
+                   : 'Antwerp (BEANR)'
+    const routeStr = selectedDisruption === 'ROTTERDAM'   ? 'Singapore Diversion'
+                   : selectedDisruption === 'ARABIAN_SEA' ? 'Nagoya Bypass'
+                   : 'Zeebrugge Feeder'
+
+    const baseDelay = 4.2 * multCong * multWth * disMult
+    const p50h  = parseFloat(baseDelay.toFixed(1))
+    const p75h  = parseFloat((baseDelay * 1.6).toFixed(1))
+    const p90h  = parseFloat((baseDelay * 3.8 * multDmd).toFixed(1))
+    const p95h  = parseFloat((baseDelay * 5.4 * multDmd).toFixed(1))
+    const expDh = parseFloat((baseDelay * 1.3).toFixed(1))
+    const wcH   = parseFloat((p95h * 1.22).toFixed(1))
+
+    const p50Cost = Math.round(58000 * multCong * multFuel * multDmd)
+    const p90Cost = Math.round(p50Cost * 1.42 * multWh)
+    const p95Cost = Math.round(p50Cost * 1.75 * multWh)
+
+    const baseRisk = Math.min(98, Math.round(32 * multCong * multWth * disMult))
+    const p50Risk  = Math.max(8,  Math.round(baseRisk * 0.42))
+    const p90Risk  = Math.min(95, p50Risk + 35)
+    const p95Risk  = Math.min(99, p50Risk + 48)
+
+    const altRisk  = Math.min(95, Math.round(baseRisk * 0.68))
+    const altDelay = parseFloat((baseDelay * 1.4).toFixed(1))
+    const altCost  = Math.round(p50Cost * 0.95)
+
+    const baseCost = Math.round(p50Cost * 1.15)
+    const baseLoss = Math.round(p50Cost * 0.88 * multCong)
+    const expLoss  = Math.round(baseLoss * 0.23)
+    const altLoss  = Math.round(baseLoss * 0.48)
+
+    const baselineDelay = parseFloat((baseDelay * 3.5).toFixed(1))
+
+    // Service levels: higher congestion/weather = worse service
+    const svcP50 = Math.max(55, Math.round(97 - multCong * 12 - multWth * 8))
+    const svcP90 = Math.max(40, svcP50 - 10)
+    const svcP95 = Math.max(25, svcP50 - 24)
+
+    // Sensitivity impacts driven by slider values
+    const congImpact = Math.min(99, Math.round(congestion * 0.9))
+    const wthImpact  = Math.min(99, Math.round(weather * 7.5))
+    const vesImpact  = Math.min(99, Math.round((100 - vesselAvail) * 0.85 + 18))
+
+    // Robustness loss values
+    const lowLoss = Math.round(p50Cost * 0.072)
+    const medLoss = Math.round(p50Cost * 0.203)
+    const highLoss = expLoss
+    const highLossPct = Math.min(90, Math.round((highLoss / baseLoss) * 100))
+    const medLossPct  = Math.min(75, Math.round((medLoss  / baseLoss) * 100))
+    const lowLossPct  = Math.min(40, Math.round((lowLoss  / baseLoss) * 100))
+
+    // Histogram bar heights (relative to tallest bar = 100%)
+    const bars = [
+      Math.min(100, Math.max(12, p50h * 2.8)),
+      Math.min(100, Math.max(22, p50h * 6.2)),
+      Math.min(100, Math.max(45, p50h * 10.5)),
+      Math.min(100, Math.max(30, p75h * 5.8)),
+      Math.min(100, Math.max(20, p90h * 0.75)),
+      Math.min(100, Math.max(15, p95h * 0.45))
+    ]
+
+    return {
+      origStr, destStr, routeStr,
+      p50h, p75h, p90h, p95h, expDh, wcH,
+      p50Cost, p90Cost, p95Cost,
+      baseRisk, p50Risk, p90Risk, p95Risk,
+      altRisk, altDelay, altCost,
+      baseCost, baseLoss, expLoss, altLoss,
+      baselineDelay,
+      svcP50, svcP90, svcP95,
+      congImpact, wthImpact, vesImpact,
+      lowLoss, medLoss, highLoss,
+      lowLossPct, medLossPct, highLossPct,
+      bars
+    }
+  }, [congestion, weather, fuelPrice, demandChange, whCapacity, vesselAvail, selectedDisruption])
 
   const parseNum = (val: any, fallback: number): number => {
     if (typeof val === 'number' && !isNaN(val)) return val
@@ -222,62 +295,8 @@ export default function SimulationPage() {
     }
   }, [])
 
-  // Dynamically recalculate Monte Carlo simulation outcomes whenever ANY slider or disruption option changes
-  useEffect(() => {
-    const multCong = Math.pow(congestion / 50, 1.4)
-    const multWth = Math.pow(weather / 5, 1.25)
-    const multFuel = fuelPrice / 1.60
-    const multDmd = 1 + demandChange / 100
-    const multWh = 1.3 - whCapacity / 200
-
-    const disMult = selectedDisruption === 'ROTTERDAM' ? 1.35 : selectedDisruption === 'ARABIAN_SEA' ? 1.85 : 1.45
-    const origStr = selectedDisruption === 'ROTTERDAM' ? 'Rotterdam (NLRTM)' : selectedDisruption === 'ARABIAN_SEA' ? 'Mumbai (INNSA)' : 'Singapore (SGSIN)'
-    const destStr = selectedDisruption === 'ROTTERDAM' ? 'Singapore (SGSIN)' : selectedDisruption === 'ARABIAN_SEA' ? 'Yokohama (JPYOK)' : 'Antwerp (BEANR)'
-    const routeStr = selectedDisruption === 'ROTTERDAM' ? 'Singapore Diversion' : selectedDisruption === 'ARABIAN_SEA' ? 'Nagoya Bypass' : 'Zeebrugge Feeder'
-
-    const baseDelayVal = 4.2 * multCong * multWth * disMult
-    const p50h = baseDelayVal.toFixed(1)
-    const p75h = (baseDelayVal * 1.6).toFixed(1)
-    const p90h = (baseDelayVal * 3.8 * multDmd).toFixed(1)
-    const p95h = (baseDelayVal * 5.4 * multDmd).toFixed(1)
-    const expDelay = (baseDelayVal * 1.3).toFixed(1)
-
-    const p50CostNum = Math.round(58000 * multCong * multFuel * multDmd)
-    const p90CostNum = Math.round(p50CostNum * 1.42 * multWh)
-    const p95CostNum = Math.round(p50CostNum * 1.75 * multWh)
-
-    const baseRiskPct = Math.min(98, Math.round(32 * multCong * multWth * disMult))
-    const p50RiskPct = Math.max(8, Math.round(baseRiskPct * 0.42))
-    const p90RiskPct = Math.min(95, p50RiskPct + 35)
-    const p95RiskPct = Math.min(99, p50RiskPct + 48)
-
-    const baseCostNum = Math.round(p50CostNum * 1.15)
-    const baseLossNum = Math.round(p50CostNum * 0.88 * multCong)
-    const expLossNum = Math.round(baseLossNum * 0.23)
-
-    setSimResults((prev) => ({
-      ...prev,
-      originPort: origStr,
-      destinationPort: destStr,
-      selectedRouteName: routeStr,
-      p50Eta: `+${p50h}H`,
-      p75Eta: `+${p75h}H`,
-      p90Eta: `+${p90h}H`,
-      p95Eta: `+${p95h}H`,
-      expectedDelay: `+${expDelay}H`,
-      p50Cost: `$${p50CostNum.toLocaleString()} USD`,
-      p90Cost: `$${p90CostNum.toLocaleString()} USD`,
-      p95Cost: `$${p95CostNum.toLocaleString()} USD`,
-      p50Risk: `${p50RiskPct}%`,
-      p90Risk: `${p90RiskPct}%`,
-      p95Risk: `${p95RiskPct}%`,
-      baselineRisk: `${baseRiskPct}%`,
-      baselineDelay: `+${(baseDelayVal * 3.5).toFixed(1)}H`,
-      baselineCost: `$${baseCostNum.toLocaleString()}`,
-      baselineLoss: `$${baseLossNum.toLocaleString()}`,
-      expectedLoss: `$${expLossNum.toLocaleString()} USD`
-    }))
-  }, [congestion, weather, fuelPrice, demandChange, whCapacity, selectedDisruption])
+  // NOTE: All slider-driven Monte Carlo metrics are computed in the `mc` useMemo above.
+  // No useEffect needed — useMemo reruns synchronously on every render when sliders change.
 
   // Trigger 10,000 Monte Carlo Simulation Run against FastAPI backend
   const runMonteCarloSimulation = async () => {
@@ -666,67 +685,43 @@ export default function SimulationPage() {
                   <div className="grid grid-cols-4 gap-3 text-center font-mono">
                     <div className="rounded bg-[#F4F2EC] p-3 border border-stone-300">
                       <p className="text-[10px] text-stone-600 font-extrabold">P50 (MEDIAN)</p>
-                      <p className="mt-1 text-2xl font-black text-[#D94E28]">{simResults.p50Eta}</p>
+                      <p className="mt-1 text-2xl font-black text-[#D94E28]">+{mc.p50h}H</p>
                     </div>
                     <div className="rounded bg-[#F4F2EC] p-3 border border-stone-300">
                       <p className="text-[10px] text-stone-600 font-extrabold">P75</p>
-                      <p className="mt-1 text-2xl font-black text-amber-700">{simResults.p75Eta}</p>
+                      <p className="mt-1 text-2xl font-black text-amber-700">+{mc.p75h}H</p>
                     </div>
                     <div className="rounded bg-[#F4F2EC] p-3 border border-stone-300">
                       <p className="text-[10px] text-stone-600 font-extrabold">P90</p>
-                      <p className="mt-1 text-2xl font-black text-amber-700">{simResults.p90Eta}</p>
+                      <p className="mt-1 text-2xl font-black text-amber-700">+{mc.p90h}H</p>
                     </div>
                     <div className="rounded bg-[#F4F2EC] p-3 border border-stone-300">
                       <p className="text-[10px] text-stone-600 font-extrabold">P95 (TAIL)</p>
-                      <p className="mt-1 text-2xl font-black text-[#991B1B]">{simResults.p95Eta}</p>
+                      <p className="mt-1 text-2xl font-black text-[#991B1B]">+{mc.p95h}H</p>
                     </div>
                   </div>
 
-                  {/* Histogram Chart Bars */}
+                  {/* Histogram Chart Bars — heights scale live with mc values */}
                   <div className="space-y-2 pt-2 font-mono">
                     <div className="flex justify-between text-xs font-bold text-stone-700">
                       <span>Simulated Delay Distribution (10,000 Scenarios)</span>
                       <span>
-                        Expected Delay: <strong className="text-[#D94E28] font-black">{simResults.expectedDelay}</strong> · Worst-Case: <strong className="text-[#991B1B] font-black">+{((parseFloat(simResults.p95Eta) || 20) * 1.22).toFixed(1)}H</strong>
+                        Expected Delay: <strong className="text-[#D94E28] font-black">+{mc.expDh}H</strong> · Worst-Case: <strong className="text-[#991B1B] font-black">+{mc.wcH}H</strong>
                       </span>
                     </div>
-                    <div className="flex items-end gap-1.5 h-36 border-b border-stone-300 pb-1 transition-all">
-                      <div
-                        className="bg-stone-300 w-[8%] transition-all duration-300"
-                        style={{ height: `${Math.min(100, Math.max(12, (parseFloat(simResults.p50Eta) || 8) * 2.8))}%` }}
-                        title="+2.0H"
-                      />
-                      <div
-                        className="bg-[#047857] w-[12%] transition-all duration-300"
-                        style={{ height: `${Math.min(100, Math.max(22, (parseFloat(simResults.p50Eta) || 8) * 6.2))}%` }}
-                        title={`+${((parseFloat(simResults.p50Eta) || 8) * 0.6).toFixed(1)}H`}
-                      />
-                      <div
-                        className="bg-[#D94E28] w-[25%] transition-all duration-300"
-                        style={{ height: `${Math.min(100, Math.max(45, (parseFloat(simResults.p50Eta) || 8) * 10.5))}%` }}
-                        title={`${simResults.p50Eta} (P50 Median)`}
-                      />
-                      <div
-                        className="bg-amber-600 w-[22%] transition-all duration-300"
-                        style={{ height: `${Math.min(100, Math.max(30, (parseFloat(simResults.p75Eta) || 12) * 5.8))}%` }}
-                        title={`${simResults.p75Eta} (P75)`}
-                      />
-                      <div
-                        className="bg-amber-700 w-[18%] transition-all duration-300"
-                        style={{ height: `${Math.min(100, Math.max(20, (parseFloat(simResults.p90Eta) || 50) * 0.75))}%` }}
-                        title={`${simResults.p90Eta} (P90)`}
-                      />
-                      <div
-                        className="bg-[#991B1B] w-[15%] transition-all duration-300"
-                        style={{ height: `${Math.min(100, Math.max(15, (parseFloat(simResults.p95Eta) || 100) * 0.45))}%` }}
-                        title={`${simResults.p95Eta} (P95 Tail)`}
-                      />
+                    <div className="flex items-end gap-1.5 h-36 border-b border-stone-300 pb-1">
+                      <div className="bg-stone-300 w-[8%] transition-all duration-300" style={{ height: `${mc.bars[0]}%` }} title="+2.0H" />
+                      <div className="bg-[#047857] w-[12%] transition-all duration-300" style={{ height: `${mc.bars[1]}%` }} title={`+${(mc.p50h * 0.6).toFixed(1)}H`} />
+                      <div className="bg-[#D94E28] w-[25%] transition-all duration-300" style={{ height: `${mc.bars[2]}%` }} title={`+${mc.p50h}H (P50 Median)`} />
+                      <div className="bg-amber-600 w-[22%] transition-all duration-300" style={{ height: `${mc.bars[3]}%` }} title={`+${mc.p75h}H (P75)`} />
+                      <div className="bg-amber-700 w-[18%] transition-all duration-300" style={{ height: `${mc.bars[4]}%` }} title={`+${mc.p90h}H (P90)`} />
+                      <div className="bg-[#991B1B] w-[15%] transition-all duration-300" style={{ height: `${mc.bars[5]}%` }} title={`+${mc.p95h}H (P95 Tail)`} />
                     </div>
                     <div className="flex justify-between text-[10px] text-stone-500 font-mono font-bold pt-1">
                       <span>+2.0 Hours</span>
-                      <span>+{(parseFloat(simResults.p50Eta) || 8).toFixed(1)} Hours</span>
-                      <span>+{(parseFloat(simResults.p75Eta) || 13).toFixed(1)} Hours</span>
-                      <span>{simResults.p95Eta} (Tail Risk)</span>
+                      <span>+{mc.p50h} Hours</span>
+                      <span>+{mc.p75h} Hours</span>
+                      <span>+{mc.p95h}H (Tail Risk)</span>
                     </div>
                   </div>
                 </div>
@@ -736,15 +731,15 @@ export default function SimulationPage() {
                 <div className="grid grid-cols-3 gap-4 text-center font-mono">
                   <div className="rounded bg-[#F4F2EC] p-4 border border-stone-300">
                     <span className="text-[10px] text-stone-600 font-extrabold block">P50 COST</span>
-                    <span className="text-2xl font-black text-[#047857] block">{simResults.p50Cost}</span>
+                    <span className="text-2xl font-black text-[#047857] block">${mc.p50Cost.toLocaleString()} USD</span>
                   </div>
                   <div className="rounded bg-[#F4F2EC] p-4 border border-stone-300">
                     <span className="text-[10px] text-stone-600 font-extrabold block">P90 COST</span>
-                    <span className="text-2xl font-black text-amber-700 block">{simResults.p90Cost}</span>
+                    <span className="text-2xl font-black text-amber-700 block">${mc.p90Cost.toLocaleString()} USD</span>
                   </div>
                   <div className="rounded bg-[#F4F2EC] p-4 border border-stone-300">
                     <span className="text-[10px] text-stone-600 font-extrabold block">P95 TAIL COST</span>
-                    <span className="text-2xl font-black text-[#991B1B] block">{simResults.p95Cost}</span>
+                    <span className="text-2xl font-black text-[#991B1B] block">${mc.p95Cost.toLocaleString()} USD</span>
                   </div>
                 </div>
               )}
@@ -753,15 +748,15 @@ export default function SimulationPage() {
                 <div className="grid grid-cols-3 gap-4 text-center font-mono">
                   <div className="rounded bg-[#F4F2EC] p-4 border border-stone-300">
                     <span className="text-[10px] text-stone-600 font-extrabold block">P50 RISK</span>
-                    <span className="text-2xl font-black text-[#047857] block">{simResults.p50Risk}</span>
+                    <span className="text-2xl font-black text-[#047857] block">{mc.p50Risk}%</span>
                   </div>
                   <div className="rounded bg-[#F4F2EC] p-4 border border-stone-300">
                     <span className="text-[10px] text-stone-600 font-extrabold block">P90 RISK</span>
-                    <span className="text-2xl font-black text-amber-700 block">{simResults.p90Risk}</span>
+                    <span className="text-2xl font-black text-amber-700 block">{mc.p90Risk}%</span>
                   </div>
                   <div className="rounded bg-[#F4F2EC] p-4 border border-stone-300">
                     <span className="text-[10px] text-stone-600 font-extrabold block">P95 TAIL RISK</span>
-                    <span className="text-2xl font-black text-[#991B1B] block">{simResults.p95Risk}</span>
+                    <span className="text-2xl font-black text-[#991B1B] block">{mc.p95Risk}%</span>
                   </div>
                 </div>
               )}
@@ -770,15 +765,15 @@ export default function SimulationPage() {
                 <div className="grid grid-cols-3 gap-4 text-center font-mono">
                   <div className="rounded bg-[#F4F2EC] p-4 border border-stone-300">
                     <span className="text-[10px] text-stone-600 font-extrabold block">P50 SERVICE LEVEL</span>
-                    <span className="text-2xl font-black text-[#047857] block">94%</span>
+                    <span className="text-2xl font-black text-[#047857] block">{mc.svcP50}%</span>
                   </div>
                   <div className="rounded bg-[#F4F2EC] p-4 border border-stone-300">
                     <span className="text-[10px] text-stone-600 font-extrabold block">P90 SERVICE LEVEL</span>
-                    <span className="text-2xl font-black text-amber-700 block">86%</span>
+                    <span className="text-2xl font-black text-amber-700 block">{mc.svcP90}%</span>
                   </div>
                   <div className="rounded bg-[#F4F2EC] p-4 border border-stone-300">
                     <span className="text-[10px] text-stone-600 font-extrabold block">P95 SERVICE LEVEL</span>
-                    <span className="text-2xl font-black text-[#991B1B] block">71%</span>
+                    <span className="text-2xl font-black text-[#991B1B] block">{mc.svcP95}%</span>
                   </div>
                 </div>
               )}
@@ -788,48 +783,48 @@ export default function SimulationPage() {
             <div className="rounded-lg border border-stone-300 bg-white p-6 shadow-2xs space-y-4 font-mono text-xs">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-black text-stone-900 block">SECTION 6 · WHAT IF WE CHANGE THE PLAN?</span>
-                <span className="text-[10px] text-stone-500 font-extrabold">{simResults.originPort} → {simResults.destinationPort}</span>
+                <span className="text-[10px] text-stone-500 font-extrabold">{mc.origStr} → {mc.destStr}</span>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="border-b-2 border-stone-300 text-[10px] text-stone-500 font-black">
                       <th className="py-2">METRIC</th>
-                      <th className="py-2">BASELINE ({simResults.destinationPort.toUpperCase()})</th>
+                      <th className="py-2">BASELINE ({mc.destStr.toUpperCase()})</th>
                       <th className="py-2">ALTERNATIVE OPTION</th>
-                      <th className="py-2 text-[#047857]">{simResults.selectedRouteName.toUpperCase()} ★</th>
+                      <th className="py-2 text-[#047857]">{mc.routeStr.toUpperCase()} ★</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-stone-200 font-bold text-stone-800">
                     <tr>
                       <td className="py-2.5">Disruption Risk</td>
-                      <td className="py-2.5 text-[#991B1B]">{simResults.baselineRisk}</td>
-                      <td className="py-2.5 text-amber-700">42%</td>
-                      <td className="py-2.5 text-[#047857] font-black">{simResults.p50Risk}</td>
+                      <td className="py-2.5 text-[#991B1B]">{mc.baseRisk}%</td>
+                      <td className="py-2.5 text-amber-700">{mc.altRisk}%</td>
+                      <td className="py-2.5 text-[#047857] font-black">{mc.p50Risk}%</td>
                     </tr>
                     <tr>
                       <td className="py-2.5">Expected Delay</td>
-                      <td className="py-2.5 text-[#991B1B]">{simResults.baselineDelay}</td>
-                      <td className="py-2.5 text-amber-700">+9.1H</td>
-                      <td className="py-2.5 text-[#047857] font-black">{simResults.p50Eta}</td>
+                      <td className="py-2.5 text-[#991B1B]">+{mc.baselineDelay}H</td>
+                      <td className="py-2.5 text-amber-700">+{mc.altDelay}H</td>
+                      <td className="py-2.5 text-[#047857] font-black">+{mc.p50h}H</td>
                     </tr>
                     <tr>
                       <td className="py-2.5">Expected Cost</td>
-                      <td className="py-2.5">{simResults.baselineCost}</td>
-                      <td className="py-2.5">$87,000</td>
-                      <td className="py-2.5 text-stone-950 font-black">{simResults.p50Cost}</td>
+                      <td className="py-2.5">${mc.baseCost.toLocaleString()}</td>
+                      <td className="py-2.5">${mc.altCost.toLocaleString()}</td>
+                      <td className="py-2.5 text-stone-950 font-black">${mc.p50Cost.toLocaleString()} USD</td>
                     </tr>
                     <tr>
                       <td className="py-2.5">Expected Loss</td>
-                      <td className="py-2.5 text-[#991B1B]">{simResults.baselineLoss}</td>
-                      <td className="py-2.5 text-amber-700">$41,000</td>
-                      <td className="py-2.5 text-[#047857] font-black">{simResults.expectedLoss}</td>
+                      <td className="py-2.5 text-[#991B1B]">${mc.baseLoss.toLocaleString()}</td>
+                      <td className="py-2.5 text-amber-700">${mc.altLoss.toLocaleString()}</td>
+                      <td className="py-2.5 text-[#047857] font-black">${mc.expLoss.toLocaleString()} USD</td>
                     </tr>
                     <tr>
                       <td className="py-2.5">Service Level</td>
-                      <td className="py-2.5 text-stone-500">71%</td>
-                      <td className="py-2.5 text-amber-700">86%</td>
-                      <td className="py-2.5 text-[#047857] font-black">94%</td>
+                      <td className="py-2.5 text-stone-500">{mc.svcP95}%</td>
+                      <td className="py-2.5 text-amber-700">{mc.svcP90}%</td>
+                      <td className="py-2.5 text-[#047857] font-black">{mc.svcP50}%</td>
                     </tr>
                   </tbody>
                 </table>
@@ -840,7 +835,7 @@ export default function SimulationPage() {
 
         {/* ── SECTION 7 & 8: ROBUSTNESS & SENSITIVITY ANALYSIS ──────────────── */}
         <div className="grid gap-6 md:grid-cols-2">
-          {/* SECTION 7: Robustness Analysis */}
+          {/* SECTION 7: Robustness Analysis — values driven by mc */}
           <div className="rounded-lg border border-stone-300 bg-white p-6 shadow-2xs space-y-4 font-mono text-xs">
             <div className="flex items-center justify-between border-b border-stone-200 pb-3">
               <span className="font-black text-stone-900">SECTION 7 · HOW ROBUST IS THE DECISION?</span>
@@ -850,66 +845,62 @@ export default function SimulationPage() {
               <div className="space-y-1">
                 <div className="flex justify-between font-bold text-stone-700 text-[11px]">
                   <span>LOW DISRUPTION SCENARIO</span>
-                  <span className="font-black text-[#047857]">Route B Loss: $4.2K</span>
+                  <span className="font-black text-[#047857]">Route B Loss: ${(mc.lowLoss / 1000).toFixed(1)}K</span>
                 </div>
                 <div className="h-2.5 w-full bg-stone-200 rounded-full overflow-hidden">
-                  <div className="bg-[#047857] h-full w-[20%]" />
+                  <div className="bg-[#047857] h-full transition-all duration-300" style={{ width: `${mc.lowLossPct}%` }} />
                 </div>
               </div>
-
               <div className="space-y-1">
                 <div className="flex justify-between font-bold text-stone-700 text-[11px]">
                   <span>MEDIUM DISRUPTION SCENARIO</span>
-                  <span className="font-black text-[#047857]">Route B Loss: $11.8K</span>
+                  <span className="font-black text-[#047857]">Route B Loss: ${(mc.medLoss / 1000).toFixed(1)}K</span>
                 </div>
                 <div className="h-2.5 w-full bg-stone-200 rounded-full overflow-hidden">
-                  <div className="bg-[#047857] h-full w-[40%]" />
+                  <div className="bg-[#047857] h-full transition-all duration-300" style={{ width: `${mc.medLossPct}%` }} />
                 </div>
               </div>
-
               <div className="space-y-1">
                 <div className="flex justify-between font-bold text-stone-700 text-[11px]">
                   <span>HIGH SEVERITY SCENARIO</span>
-                  <span className="font-black text-[#047857]">Route B Loss: $19.0K (vs $82K Baseline)</span>
+                  <span className="font-black text-[#047857]">Route B Loss: ${(mc.highLoss / 1000).toFixed(1)}K (vs ${(mc.baseLoss / 1000).toFixed(0)}K Baseline)</span>
                 </div>
                 <div className="h-2.5 w-full bg-stone-200 rounded-full overflow-hidden">
-                  <div className="bg-[#047857] h-full w-[65%]" />
+                  <div className="bg-[#047857] h-full transition-all duration-300" style={{ width: `${mc.highLossPct}%` }} />
                 </div>
               </div>
             </div>
           </div>
 
-          {/* SECTION 8: Sensitivity Analysis */}
+          {/* SECTION 8: Sensitivity Analysis — bars driven by slider values */}
           <div className="rounded-lg border border-stone-300 bg-white p-6 shadow-2xs space-y-4 font-mono text-xs">
             <span className="font-black text-stone-900 block">SECTION 8 · SENSITIVITY ANALYSIS (WHAT DRIVES THE RESULT?)</span>
             <div className="space-y-2.5 pt-1">
               <div className="space-y-1">
                 <div className="flex justify-between font-bold text-stone-700 text-[11px]">
-                  <span>PORT CONGESTION (NLRTM)</span>
-                  <span className="font-black text-[#D94E28]">82% Impact</span>
+                  <span>PORT CONGESTION ({mc.origStr.split('(')[1]?.replace(')', '') || 'NLRTM'})</span>
+                  <span className="font-black text-[#D94E28]">{mc.congImpact}% Impact</span>
                 </div>
                 <div className="h-2.5 w-full bg-stone-200 rounded-full overflow-hidden">
-                  <div className="bg-[#D94E28] h-full w-[82%]" />
+                  <div className="bg-[#D94E28] h-full transition-all duration-300" style={{ width: `${mc.congImpact}%` }} />
                 </div>
               </div>
-
               <div className="space-y-1">
                 <div className="flex justify-between font-bold text-stone-700 text-[11px]">
                   <span>WEATHER SEVERITY</span>
-                  <span className="font-black text-amber-700">64% Impact</span>
+                  <span className="font-black text-amber-700">{mc.wthImpact}% Impact</span>
                 </div>
                 <div className="h-2.5 w-full bg-stone-200 rounded-full overflow-hidden">
-                  <div className="bg-amber-600 h-full w-[64%]" />
+                  <div className="bg-amber-600 h-full transition-all duration-300" style={{ width: `${mc.wthImpact}%` }} />
                 </div>
               </div>
-
               <div className="space-y-1">
                 <div className="flex justify-between font-bold text-stone-700 text-[11px]">
                   <span>VESSEL AVAILABILITY</span>
-                  <span className="font-black text-stone-800">48% Impact</span>
+                  <span className="font-black text-stone-800">{mc.vesImpact}% Impact</span>
                 </div>
                 <div className="h-2.5 w-full bg-stone-200 rounded-full overflow-hidden">
-                  <div className="bg-stone-600 h-full w-[48%]" />
+                  <div className="bg-stone-600 h-full transition-all duration-300" style={{ width: `${mc.vesImpact}%` }} />
                 </div>
               </div>
             </div>
